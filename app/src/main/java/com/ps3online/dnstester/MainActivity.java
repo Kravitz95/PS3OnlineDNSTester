@@ -27,7 +27,7 @@ public class MainActivity extends Activity {
  void p2p(boolean create){log.setText("");String ws=server.getText().toString().trim();if(ws.isEmpty()){a("Falta URL WebSocket. Despliega worker/signaling del proyecto y coloca wss://...");return;}
   String code=room.getText().toString().trim();if(create)code="";String finalCode=code;String d=dns.getText().toString().trim();a(create?"CREANDO SALA...":"UNIENDO SALA "+code+"...");
   Executors.newSingleThreadExecutor().execute(()->{try{
-   P2PSession s=new P2PSession(ws,finalCode,create,d,"game="+game.getSelectedItem().toString(),this::a);s.start();
+   P2PSession s=new P2PSession(ws,finalCode,create,d,"game="+game.getSelectedItem().toString(),this,this::a);
   }catch(Exception e){a("P2P ERROR: "+e.getMessage());}});
  }
 }
