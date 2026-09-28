@@ -1,0 +1,121 @@
+{
+  "schema": 1,
+  "sources": [
+    {
+      "name": "Sony PS3 manual",
+      "url": "https://manuals.playstation.net/document/es/ps3/current/settings/connecttest.html",
+      "note": "PSN and direct PS3 game communication; UDP 3658 may vary behind NAT."
+    },
+    {
+      "name": "Activision Call of Duty ports",
+      "url": "https://support.activision.com/es/articles/ports-used-for-call-of-duty-games",
+      "note": "Official current Activision table; only PS3 rows copied where explicitly listed."
+    },
+    {
+      "name": "Rockstar GTA IV",
+      "url": "https://support.rockstargames.com/articles/6YpjOeQMBquEhnZ6HG3DFh/which-ports-are-required-to-play-gta-iv-via-the-ps3-network",
+      "note": "Official Rockstar PS3 GTA IV ports."
+    }
+  ],
+  "profiles": [
+    {
+      "game": "PS3/PSN general",
+      "platform": "PS3",
+      "tcp": [
+        80,
+        443,
+        3478,
+        3479,
+        3480,
+        5223,
+        8080
+      ],
+      "udp": [
+        3478,
+        3479,
+        3658
+      ],
+      "confidence": "official-Sony",
+      "note": "3658 is documented for direct PS3 game/voice/video traffic; Sony notes NAT may require a different port."
+    },
+    {
+      "game": "Call of Duty: Black Ops II",
+      "platform": "PS3",
+      "tcp": [
+        5223
+      ],
+      "udp": [
+        5223,
+        3478,
+        3479,
+        3658
+      ],
+      "confidence": "official-Activision"
+    },
+    {
+      "game": "Call of Duty: Ghosts",
+      "platform": "PS3",
+      "tcp": [
+        5223
+      ],
+      "udp": [
+        5223,
+        3478,
+        3479,
+        3658
+      ],
+      "confidence": "official-Activision"
+    },
+    {
+      "game": "Call of Duty: Advanced Warfare",
+      "platform": "PS3",
+      "tcp": [
+        5223
+      ],
+      "udp": [
+        5223,
+        3478,
+        3479,
+        3658
+      ],
+      "confidence": "official-Activision"
+    },
+    {
+      "game": "Call of Duty: Black Ops III",
+      "platform": "PS3",
+      "tcp": [
+        3074,
+        5223
+      ],
+      "udp": [
+        5223,
+        3478,
+        3479,
+        3658
+      ],
+      "confidence": "official-Activision"
+    },
+    {
+      "game": "Grand Theft Auto IV",
+      "platform": "PS3",
+      "tcp": [
+        8001,
+        27900,
+        80,
+        8080,
+        443,
+        5223,
+        3478,
+        3479,
+        3480
+      ],
+      "udp": [
+        6672,
+        28900,
+        3478,
+        3479
+      ],
+      "confidence": "official-Rockstar"
+    }
+  ]
+}
