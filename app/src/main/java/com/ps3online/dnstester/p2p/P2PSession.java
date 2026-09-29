@@ -1,4 +1,5 @@
 package com.ps3online.dnstester.p2p;
+import org.json.JSONObject;
 import android.content.Context;import com.ps3online.dnstester.stun.StunP2P;import okhttp3.*;import org.json.*;import java.net.*;import java.nio.*;import java.util.*;import java.util.concurrent.*;import java.util.function.Consumer;
 public class P2PSession{
  final String wsUrl,initialRoom,dns,info;final boolean host;final Consumer<String> out;final Context ctx;WebSocket ws;String room;DatagramSocket udp;InetSocketAddress peer;long sent,recv;volatile boolean ready;
