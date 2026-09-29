@@ -20,6 +20,8 @@ jobs:
 
       - name: Configurar Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          build-root-directory: worker
 
       - name: Compilar APK Debug
         run: gradle assembleDebug
