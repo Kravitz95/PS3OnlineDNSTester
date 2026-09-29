@@ -22,14 +22,15 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-          
+          build-root-directory: worker
 
       - name: Compilar APK Debug
         run: gradle assembleDebug
+        working-directory: worker
 
       - name: Publicar APK
         uses: actions/upload-artifact@v4
         with:
           name: PS3OnlineDNSTester-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: worker/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
