@@ -1,211 +1,1256 @@
 package com.ps3online.dnstester;
-
-import android.app.*;
-import android.os.*;
+import android.content.Intent;
+import android.net.Uri;
+import android.app.Activity;
+import android.os.Bundle;
+import android.text.InputType;
+import android.view.View;
+import android.view.Gravity;
 import android.widget.*;
-import java.util.*;
-import java.util.concurrent.*;
+import android.widget.AutoCompleteTextView;
 
+import com.ps3online.dnstester.model.GameProfile;
+import com.ps3online.dnstester.data.GameLibrary;
+import com.ps3online.dnstester.model.DnsCombo;
 import com.ps3online.dnstester.dns.DnsTester;
-import com.ps3online.dnstester.stun.StunP2P;
-import com.ps3online.dnstester.upnp.UpnpTester;
-import com.ps3online.dnstester.p2p.P2PSession;
+import com.ps3online.dnstester.data.GameSearchService;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends Activity {
 
-    EditText dns, server, room;
-    Spinner game;
-    TextView log;
-    Button solo, host, join;
+    private AutoCompleteTextView gameSelector;
+    private AutoCompleteTextView dnsSelector;
+    private TextView gameInfo;
+    private TextView verificationCard;
+    private TextView requirementCard;
+    private TextView status;
+    private EditText customDns;
+    private Button testButton;
+    private Button copyButton;
 
-    String[] games = {
-        "PS3/PSN general",
-        "Call of Duty: Black Ops II",
-        "Call of Duty: Ghosts",
-        "Call of Duty: Advanced Warfare",
-        "Call of Duty: Black Ops III",
-        "Grand Theft Auto IV"
-    };
+    private final List<GameProfile> games = new ArrayList<>();
+    private final List<DnsCombo> dnsCombos = new ArrayList<>();
+    private GameLibrary gameLibrary;
+private GameSearchService gameSearchService;
+private ArrayAdapter<String> gameSearchAdapter;
+private final List<String> gameSearchResults = new ArrayList<>();
+private final ExecutorService dnsExecutor = Executors.newFixedThreadPool(2);
 
-    public void onCreate(Bundle b) {
-        super.onCreate(b);
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
-        LinearLayout l = new LinearLayout(this);
-        l.setOrientation(LinearLayout.VERTICAL);
-        l.setPadding(24, 24, 24, 24);
+loadGameLibrary();
+gameSearchService = new GameSearchService();
+buildInterface();
+    }
 
-        TextView h = new TextView(this);
-        h.setText("PS3 Online DNS Tester 3.1\nPRUEBAS REALES");
-        h.setTextSize(22);
-        l.addView(h);
+    private void loadGameLibrary() {
 
-        dns = new EditText(this);
-        dns.setHint("DNS elegido");
-        dns.setText("1.1.1.1");
-        l.addView(dns);
+        gameLibrary = GameLibrary.load(this);
 
-        game = new Spinner(this);
-        game.setAdapter(
-            new ArrayAdapter<String>(
+        games.clear();
+        dnsCombos.clear();
+
+        if (gameLibrary != null) {
+            games.addAll(gameLibrary.games);
+            dnsCombos.addAll(gameLibrary.dnsCombos);
+        }
+
+        /*
+         * La biblioteca es la fuente de datos.
+         * MainActivity ya no crea juegos manualmente.
+         */
+        if (games.isEmpty()) {
+            GameProfile fallback = new GameProfile();
+            fallback.id = "ps3_psn_general";
+            fallback.nombre = "PS3/PSN general";
+            fallback.psnActivo = false;
+            fallback.requiereVerificacion = false;
+
+            games.add(fallback);
+        }
+    }
+
+    private void buildInterface() {
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.setClipToPadding(false);
+        scroll.setPadding(0, 0, 0, 80);
+
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setGravity(Gravity.CENTER_HORIZONTAL);
+        root.setPadding(32, 28, 32, 100);
+
+        scroll.addView(root);
+
+        LinearLayout headerRow = new LinearLayout(this);
+        headerRow.setOrientation(LinearLayout.HORIZONTAL);
+        headerRow.setGravity(Gravity.CENTER_VERTICAL);
+        headerRow.setPadding(0, 64, 0, 28);
+
+        TextView onlineUsers = new TextView(this);
+        onlineUsers.setText("👥 142 online");
+        onlineUsers.setTextSize(12);
+        onlineUsers.setGravity(Gravity.CENTER_VERTICAL);
+
+        LinearLayout.LayoutParams sideParams =
+                new LinearLayout.LayoutParams(
+                        0,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        1f
+                );
+
+        headerRow.addView(onlineUsers, sideParams);
+
+        TextView headerTitle = new TextView(this);
+        headerTitle.setText("🎮 PS3 ONLINE CONNECT v4.0");
+        headerTitle.setTextSize(20);
+        headerTitle.setGravity(Gravity.CENTER);
+
+        headerRow.addView(headerTitle,
+                new LinearLayout.LayoutParams(
+                        0,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        2f
+                ));
+
+TextView discordHeader = new TextView(this);
+discordHeader.setText("💬 Discord");
+discordHeader.setTextSize(12);
+discordHeader.setGravity(Gravity.CENTER);
+discordHeader.setPadding(8, 12, 8, 12);
+discordHeader.setClickable(true);
+discordHeader.setFocusable(true);
+
+discordHeader.setOnClickListener(view -> {
+    Intent discordIntent = new Intent(
+            Intent.ACTION_VIEW,
+            Uri.parse("https://discord.gg/q88jScYgnS")
+    );
+    startActivity(discordIntent);
+});
+
+headerRow.addView(discordHeader, sideParams);
+        root.addView(headerRow,
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                ));
+
+
+        gameSelector = new AutoCompleteTextView(this);
+
+        gameSelector.setHint("1. 🔍 Buscar juego...");
+        gameSelector.setSingleLine(true);
+        gameSelector.setTextSize(16);
+        gameSelector.setThreshold(0);
+        gameSelector.setPadding(24, 16, 24, 16);
+
+       List<String> initialGameNames =
+        new ArrayList<>();
+
+for (GameProfile game : games) {
+    if (game.nombre != null &&
+            !game.nombre.trim().isEmpty()) {
+        initialGameNames.add(game.nombre);
+    }
+}
+
+gameSearchResults.clear();
+gameSearchResults.addAll(initialGameNames);
+
+gameSearchAdapter =
+        new ArrayAdapter<>(
                 this,
-                android.R.layout.simple_spinner_dropdown_item,
-                games
-            )
-        );
-        l.addView(game);
-
-        server = new EditText(this);
-        server.setHint("WebSocket de señalización (wss://...)");
-        l.addView(server);
-
-        room = new EditText(this);
-        room.setHint("Código de sala (Host: dejar vacío)");
-        l.addView(room);
-
-        solo = new Button(this);
-        solo.setText("1. PRUEBA SOLO");
-        l.addView(solo);
-
-        host = new Button(this);
-        host.setText("2. CREAR SALA P2P");
-        l.addView(host);
-
-        join = new Button(this);
-        join.setText("3. UNIRSE A SALA P2P");
-        l.addView(join);
-
-        log = new TextView(this);
-        log.setTextIsSelectable(true);
-
-        ScrollView s = new ScrollView(this);
-        s.addView(log);
-
-        l.addView(
-            s,
-            new LinearLayout.LayoutParams(-1, 0, 1)
+                android.R.layout.simple_dropdown_item_1line,
+                gameSearchResults
         );
 
-        setContentView(l);
+gameSelector.setAdapter(gameSearchAdapter);
 
-        solo.setOnClickListener(v -> solo());
-        host.setOnClickListener(v -> p2p(true));
-        join.setOnClickListener(v -> p2p(false));
-    }
+gameSelector.addTextChangedListener(
+        new android.text.TextWatcher() {
 
-    void a(String x) {
-        runOnUiThread(() -> log.append(x + "\n"));
-    }
+            @Override
+            public void beforeTextChanged(
+                    CharSequence s,
+                    int start,
+                    int count,
+                    int after
+            ) {
+            }
 
-    void solo() {
-        log.setText("");
+            @Override
+            public void onTextChanged(
+                    CharSequence s,
+                    int start,
+                    int before,
+                    int count
+            ) {
 
-        String d = dns.getText().toString().trim();
-        String g = game.getSelectedItem().toString();
+                String query =
+                        s == null
+                                ? ""
+                                : s.toString().trim();
 
-        Executors.newSingleThreadExecutor().execute(() -> {
-            try {
-                a("JUEGO: " + g);
+                if (query.isEmpty()) {
 
-                DnsTester.Result dr =
-                    DnsTester.queryA(d, "example.com", 4000);
+                    gameSearchResults.clear();
 
-                a(
-                    "DNS directo: " +
-                    (dr.ok ? "PASS" : "FAIL") +
-                    " | " + dr.rttMs + " ms"
+                    for (GameProfile game : games) {
+                        if (game.nombre != null &&
+                                !game.nombre.trim().isEmpty()) {
+                            gameSearchResults.add(
+                                    game.nombre
+                            );
+                        }
+                    }
+
+                    gameSearchAdapter.notifyDataSetChanged();
+                    return;
+                }
+
+                /*
+                 * Primero mostramos los juegos registrados
+                 * que coincidan con lo escrito.
+                 */
+                gameSearchResults.clear();
+
+                String queryLower =
+                        query.toLowerCase();
+
+                for (GameProfile game : games) {
+
+                    if (game.nombre == null) {
+                        continue;
+                    }
+
+                    if (game.nombre
+                            .toLowerCase()
+                            .contains(queryLower)) {
+
+                        if (!gameSearchResults
+                                .contains(game.nombre)) {
+
+                            gameSearchResults.add(
+                                    game.nombre
+                            );
+                        }
+                    }
+                }
+
+                gameSearchAdapter.notifyDataSetChanged();
+
+                /*
+                 * Indicador de búsqueda externa.
+                 */
+                gameInfo.setText(
+                        "🔎 BUSCANDO EN INTERNET...\n" +
+                        "Comprobando juegos PS3 disponibles."
                 );
 
-                StunP2P.Result sr =
-                    StunP2P.discover(
-                        "stun.cloudflare.com",
-                        3478,
-                        5000
+                gameSearchService.search(
+                        query,
+                        new GameSearchService.CallbackResult() {
+
+                            @Override
+                            public void onSuccess(
+                                    List<GameSearchService.SearchResult>
+                                            results
+                            ) {
+
+                                runOnUiThread(() -> {
+
+                                    /*
+                                     * Evitamos que una respuesta
+                                     * antigua reemplace una búsqueda
+                                     * más reciente.
+                                     */
+                                    String current =
+                                            gameSelector
+                                                    .getText()
+                                                    .toString()
+                                                    .trim();
+
+                                    if (!current.equals(query)) {
+                                        return;
+                                    }
+
+                                    for (
+                                            GameSearchService.SearchResult
+                                                    result : results
+                                    ) {
+
+                                        if (result == null ||
+                                                result.name == null ||
+                                                result.name
+                                                        .trim()
+                                                        .isEmpty()) {
+                                            continue;
+                                        }
+
+                                        if (!gameSearchResults
+                                                .contains(
+                                                        result.name
+                                                )) {
+
+                                            gameSearchResults.add(
+                                                    result.name
+                                            );
+                                        }
+                                    }
+
+                                    gameSearchAdapter
+                                            .notifyDataSetChanged();
+
+                                    if (results.isEmpty()) {
+
+                                        gameInfo.setText(
+                                                "🔎 " + query +
+                                                "\n" +
+                                                "No se encontraron " +
+                                                "resultados PS3 externos."
+                                        );
+
+                                    } else {
+
+                                        gameInfo.setText(
+                                                "🌐 RESULTADOS EXTERNOS\n" +
+                                                results.size() +
+                                                " juego(s) PS3 encontrado(s) " +
+                                                "en Wikidata."
+                                        );
+                                    }
+
+                                    gameSelector.show();
+                                });
+                            }
+
+                            @Override
+                            public void onError(
+                                    String message
+                            ) {
+
+                                runOnUiThread(() -> {
+
+                                    String current =
+                                            gameSelector
+                                                    .getText()
+                                                    .toString()
+                                                    .trim();
+
+                                    if (!current.equals(query)) {
+                                        return;
+                                    }
+
+                                    gameInfo.setText(
+                                            "⚠️ Búsqueda externa no disponible.\n" +
+                                            "Los juegos registrados siguen disponibles."
+                                    );
+                                });
+                            }
+                        }
+                );
+            }
+
+            @Override
+            public void afterTextChanged(
+                    android.text.Editable s
+            ) {
+            }
+        }
+);
+
+        gameSelector.setAdapter(gameAdapter);
+gameSearchAdapter =
+        new ArrayAdapter<>(
+                this,
+                android.R.layout.simple_dropdown_item_1line,
+                gameSearchResults
+        );
+        LinearLayout.LayoutParams spinnerParams =
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                );
+        spinnerParams.setMargins(0, 0, 0, 8);
+        root.addView(gameSelector, spinnerParams);
+
+        gameInfo = new TextView(this);
+        gameInfo.setTextSize(16);
+        gameInfo.setGravity(Gravity.CENTER);
+        gameInfo.setPadding(16, 16, 16, 16);
+        root.addView(gameInfo);
+
+        verificationCard = new TextView(this);
+        verificationCard.setTextSize(16);
+        verificationCard.setGravity(Gravity.CENTER);
+        verificationCard.setPadding(20, 18, 20, 18);
+        verificationCard.setVisibility(View.GONE);
+        root.addView(verificationCard);
+
+        requirementCard = new TextView(this);
+        requirementCard.setTextSize(16);
+        requirementCard.setGravity(Gravity.CENTER);
+        requirementCard.setPadding(20, 18, 20, 18);
+        requirementCard.setVisibility(View.GONE);
+        root.addView(requirementCard);
+
+TextView dnsTitle = new TextView(this);
+dnsTitle.setText("2. 🌐 DNS");
+dnsTitle.setTextSize(18);
+dnsTitle.setGravity(Gravity.LEFT);
+dnsTitle.setPadding(0, 24, 0, 2);
+root.addView(dnsTitle);
+
+TextView dnsInstruction = new TextView(this);
+dnsInstruction.setText(
+        "Selecciona una DNS o introduce una personalizada"
+);
+dnsInstruction.setTextSize(13);
+dnsInstruction.setGravity(Gravity.LEFT);
+dnsInstruction.setPadding(0, 0, 0, 10);
+root.addView(dnsInstruction);
+        TextView dnsPrimaryLabel = new TextView(this);
+        dnsPrimaryLabel.setText("🔵 DNS primaria");
+        dnsPrimaryLabel.setTextSize(15);
+        dnsPrimaryLabel.setPadding(0, 8, 0, 4);
+        root.addView(dnsPrimaryLabel);
+
+        dnsSelector = new AutoCompleteTextView(this);
+        dnsSelector.setHint("Buscar DNS primaria...");
+        dnsSelector.setTextSize(16);
+        dnsSelector.setSingleLine(true);
+        dnsSelector.setThreshold(0);
+
+        ArrayAdapter<String> dnsAdapter =
+                new ArrayAdapter<>(
+                        this,
+                        android.R.layout.simple_dropdown_item_1line,
+                        new ArrayList<>()
+                );
+
+        dnsSelector.setAdapter(dnsAdapter);
+
+        root.addView(
+                dnsSelector,
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+        );
+
+        TextView secondaryLabel = new TextView(this);
+        secondaryLabel.setText("🌐 DNS secundaria");
+        secondaryLabel.setTextSize(15);
+        secondaryLabel.setPadding(0, 12, 0, 4);
+        root.addView(secondaryLabel);
+
+        customDns = new EditText(this);
+        customDns.setHint("DNS secundaria...");
+        customDns.setInputType(InputType.TYPE_CLASS_TEXT);
+        customDns.setSingleLine(true);
+        customDns.setTextSize(16);
+
+        LinearLayout.LayoutParams secondaryParams =
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                );
+
+        root.addView(customDns, secondaryParams);
+
+        TextView dnsStatus = new TextView(this);
+        dnsStatus.setText(
+                "Selecciona primero un juego para cargar sus DNS registradas."
+        );
+        dnsStatus.setTextSize(13);
+        dnsStatus.setPadding(0, 8, 0, 4);
+        root.addView(dnsStatus);
+
+        // Combos actualmente disponibles para el juego seleccionado.
+        final List<DnsCombo> selectedDnsCombos = new ArrayList<>();
+
+        // Al tocar/escribir la primaria se muestran solamente los combos
+        // correspondientes al juego actualmente seleccionado.
+        dnsSelector.setOnFocusChangeListener((view, hasFocus) -> {
+            if (hasFocus) {
+                dnsAdapter.clear();
+
+                String selectedName =
+                        gameSelector.getText().toString().trim();
+
+                GameProfile selectedGame = null;
+
+                for (GameProfile candidate : games) {
+                    if (candidate.nombre.equalsIgnoreCase(selectedName)) {
+                        selectedGame = candidate;
+                        break;
+                    }
+
+                    for (String alias : candidate.alias) {
+                        if (alias.equalsIgnoreCase(selectedName)) {
+                            selectedGame = candidate;
+                            break;
+                        }
+                    }
+
+                    if (selectedGame != null) {
+                        break;
+                    }
+                }
+
+                selectedDnsCombos.clear();
+
+                if (selectedGame != null) {
+
+                    for (String comboId : selectedGame.dnsComboIds) {
+
+                        for (DnsCombo combo : dnsCombos) {
+
+                            if (combo.id.equals(comboId)) {
+                                selectedDnsCombos.add(combo);
+
+                                String icon = "🔵";
+
+                                if (combo.origen ==
+                                        DnsCombo.Origen.SUGERIDA_API) {
+                                    icon = "🟡";
+                                } else if (combo.origen ==
+                                        DnsCombo.Origen.PERSONALIZADA) {
+                                    icon = "⚪";
+                                }
+
+                                String secondary =
+                                        combo.dnsSecundaria == null
+                                                ? ""
+                                                : combo.dnsSecundaria;
+
+                                String display =
+                                        icon + " " +
+                                        combo.dnsPrimaria +
+                                        (secondary.isEmpty()
+                                                ? ""
+                                                : " / " + secondary);
+
+                                dnsAdapter.add(display);
+                            }
+                        }
+                    }
+
+                    if (selectedDnsCombos.isEmpty()) {
+                        dnsStatus.setText(
+                                "⚪ Este juego no tiene todavía una DNS registrada."
+                        );
+                    } else {
+                        dnsStatus.setText(
+                                "🔵 DNS registradas para " +
+                                selectedGame.nombre
+                        );
+                    }
+
+                } else {
+                    dnsStatus.setText(
+                            "⚠️ Selecciona un juego registrado primero."
                     );
+                }
 
-                a(
-                    "STUN/NAT: " +
-                    (sr.ok ? "PASS" : "NO DETERMINADO") +
-                    " | " + sr.message
-                );
-
-                UpnpTester.Result ur =
-                    UpnpTester.test(this, 15000);
-
-                a(
-                    "UPnP: " +
-                    ur.status +
-                    " | " +
-                    ur.mapping +
-                    " | lease=" +
-                    ur.leaseSeconds +
-                    "s | renovación=" +
-                    ur.renewal +
-                    " | eliminación=" +
-                    ur.removal
-                );
-
-                a(
-                    "RESULTADO: " +
-                    (
-                        dr.ok && sr.ok
-                        ? "CANDIDATA PARA PASAR A PRUEBA P2P"
-                        : "EVIDENCIA INSUFICIENTE / NO DETERMINADO"
-                    )
-                );
-
-            } catch (Exception e) {
-                a("ERROR: " + e.getMessage());
+                dnsAdapter.notifyDataSetChanged();
+                dnsSelector.showDropDown();
             }
         });
+
+        // Selección de un combo: primaria + secundaria se rellenan juntas.
+        dnsSelector.setOnItemClickListener(
+                (parent, view, position, id) -> {
+
+                    if (position < 0 ||
+                            position >= selectedDnsCombos.size()) {
+                        return;
+                    }
+
+                    DnsCombo combo =
+                            selectedDnsCombos.get(position);
+
+                    if (combo.dnsPrimaria != null) {
+                        dnsSelector.setText(
+                                combo.dnsPrimaria,
+                                false
+                        );
+                    }
+
+                    if (combo.dnsSecundaria != null) {
+                        customDns.setText(
+                                combo.dnsSecundaria
+                        );
+                    }
+
+                    String secondaryInfo =
+                            combo.secundariaPublica
+                                    ? " · secundaria pública editable"
+                                    : "";
+
+                    dnsStatus.setText(
+                            "🔵 COMBO REGISTRADO" +
+                            secondaryInfo +
+                            "\n" +
+                            combo.dnsPrimaria +
+                            " / " +
+                            (combo.dnsSecundaria == null
+                                    ? ""
+                                    : combo.dnsSecundaria)
+                    );
+                }
+        );
+
+        // Si el usuario escribe una primaria manualmente, no inventamos
+        // una secundaria. El usuario conserva control sobre ambos campos.
+        dnsSelector.addTextChangedListener(
+                new android.text.TextWatcher() {
+
+                    @Override
+                    public void beforeTextChanged(
+                            CharSequence s,
+                            int start,
+                            int count,
+                            int after) {
+                    }
+
+                    @Override
+                    public void onTextChanged(
+                            CharSequence s,
+                            int start,
+                            int before,
+                            int count) {
+
+                        if (s == null) {
+                            return;
+                        }
+
+                        String typed =
+                                s.toString().trim();
+
+                        if (typed.isEmpty()) {
+                            return;
+                        }
+
+                        boolean registered = false;
+
+                        for (DnsCombo combo : selectedDnsCombos) {
+                            if (typed.equals(
+                                    combo.dnsPrimaria)) {
+                                registered = true;
+                                break;
+                            }
+                        }
+
+                        if (!registered) {
+                            dnsStatus.setText(
+                                    "⚪ DNS primaria personalizada. " +
+                                    "Introduce o conserva la secundaria que quieras utilizar."
+                            );
+                        }
+                    }
+
+                    @Override
+                    public void afterTextChanged(
+                            android.text.Editable s) {
+                    }
+                }
+        );
+
+        testButton = new Button(this);
+        testButton.setText(
+                "🔎 Probar DNS"
+        );
+        testButton.setAllCaps(false);
+
+        LinearLayout.LayoutParams testParams =
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                );
+        testParams.setMargins(0, 16, 0, 0);
+        root.addView(testButton, testParams);
+
+        testButton.setOnClickListener(v -> testDnsSimultaneously());
+
+        copyButton = new Button(this);
+        copyButton.setText(
+                "📋 COPIAR CONFIGURACIÓN"
+        );
+        copyButton.setAllCaps(false);
+        root.addView(
+                copyButton,
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+        );
+
+        TextView communityTitle = new TextView(this);
+        communityTitle.setText(
+                "3. 👥 COMUNIDADES"
+        );
+        communityTitle.setTextSize(18);
+        communityTitle.setGravity(Gravity.CENTER);
+        communityTitle.setPadding(0, 32, 0, 10);
+        root.addView(communityTitle);
+
+        TextView communityInfo = new TextView(this);
+        communityInfo.setText(
+                "Comunidades disponibles para registro, " +
+                "verificación y soporte de juegos.\n\n" +
+                "💬 PS3 Online Assistant\n" +
+                "🎮 GTA ReV\n" +
+                "🚗 Rocket League & MK9\n" +
+                "🔫 Battlefield\n" +
+                "🏎️ Gran Turismo 5 & 6\n" +
+                "🔧 Counter-Strike: GO\n" +
+                "🆔 The Last of Us + Uncharted 2 + Uncharted 3"
+        );
+        communityInfo.setTextSize(15);
+        communityInfo.setGravity(Gravity.CENTER);
+        communityInfo.setPadding(20, 12, 20, 12);
+        root.addView(communityInfo);
+
+        Button communityButton = new Button(this);
+        communityButton.setText(
+                "👥 ABRIR ENLACES DE COMUNIDAD"
+        );
+        communityButton.setAllCaps(false);
+        root.addView(
+                communityButton,
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+        );
+
+        TextView advancedTitle = new TextView(this);
+        advancedTitle.setText(
+                "4. 🛠️ DIAGNÓSTICO AVANZADO"
+        );
+        advancedTitle.setTextSize(18);
+        advancedTitle.setGravity(Gravity.CENTER);
+        advancedTitle.setPadding(0, 32, 0, 10);
+        root.addView(advancedTitle);
+
+        Button advanced = new Button(this);
+        advanced.setText(
+                "🛠️ MODO AVANZADO: LOG STUN / UPnP / P2P"
+        );
+        advanced.setAllCaps(false);
+        root.addView(
+                advanced,
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+        );
+
+        TextView supportTitle = new TextView(this);
+        supportTitle.setText(
+                "☕ APOYAR EL PROYECTO"
+        );
+        supportTitle.setTextSize(18);
+        supportTitle.setGravity(Gravity.CENTER);
+        supportTitle.setPadding(0, 36, 0, 10);
+        root.addView(supportTitle);
+
+        TextView supportInfo = new TextView(this);
+        supportInfo.setText(
+                "El apoyo es completamente voluntario.\n" +
+                "Ayuda a mantener la APK, la API y la base de datos."
+        );
+        supportInfo.setTextSize(14);
+        supportInfo.setGravity(Gravity.CENTER);
+        supportInfo.setPadding(20, 8, 20, 18);
+        root.addView(supportInfo);
+
+        Button supportButton = new Button(this);
+        supportButton.setText(
+                "☕ APOYAR EL PROYECTO"
+        );
+        supportButton.setAllCaps(false);
+        root.addView(
+                supportButton,
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+        );
+
+        status = new TextView(this);
+        status.setText(
+                "\nEstado: esperando prueba."
+        );
+        status.setTextSize(14);
+        status.setGravity(Gravity.CENTER);
+        status.setTextIsSelectable(true);
+        status.setPadding(10, 24, 10, 40);
+        root.addView(status);
+
+
+gameSelector.setOnItemClickListener(
+        (parent, view, position, id) -> {
+
+            String selectedName =
+                    gameSelector.getText().toString().trim();
+
+            /*
+             * Primero buscamos en la base local.
+             * Los datos registrados siempre tienen prioridad.
+             */
+            GameProfile game = null;
+
+            for (GameProfile candidate : games) {
+
+                if (candidate.nombre != null &&
+                        candidate.nombre.equalsIgnoreCase(
+                                selectedName
+                        )) {
+
+                    game = candidate;
+                    break;
+                }
+            }
+
+            /*
+             * JUEGO NO REGISTRADO:
+             * puede proceder de Wikidata.
+             *
+             * No inventamos DNS, PSN, comunidad ni
+             * requisitos para un resultado externo.
+             */
+            if (game == null) {
+
+                selectedDnsCombos.clear();
+
+                dnsSelector.setText("", false);
+                customDns.setText("");
+
+                dnsStatus.setText(
+                        "🌐 JUEGO ENCONTRADO EN INTERNET\n\n" +
+                        "🎮 " + selectedName +
+                        "\n" +
+                        "Plataforma: PlayStation 3\n\n" +
+                        "⚠️ Este juego todavía no está " +
+                        "registrado en la base local.\n\n" +
+                        "No se asignará automáticamente una DNS " +
+                        "ni un estado PSN."
+                );
+
+                gameInfo.setText(
+                        "🌐 RESULTADO EXTERNO\n" +
+                        "🎮 " + selectedName +
+                        "\n" +
+                        "PlayStation 3\n\n" +
+                        "Para obtener DNS, estado PSN o información " +
+                        "de comunidad, primero debe verificarse y " +
+                        "registrarse."
+                );
+
+                verificationCard.setText(
+                        "⚠️ VERIFICACIÓN RECOMENDADA\n\n" +
+                        "Este resultado procede de una búsqueda " +
+                        "externa y todavía no forma parte de la " +
+                        "base verificada de PS3 ONLINE CONNECT."
+                );
+
+                verificationCard.setVisibility(
+                        View.VISIBLE
+                );
+
+                requirementCard.setVisibility(
+                        View.GONE
+                );
+
+                return;
+            }
+
+            /*
+             * JUEGO REGISTRADO:
+             * conservamos el comportamiento original.
+             */
+            selectedDnsCombos.clear();
+
+            for (String comboId : game.dnsComboIds) {
+
+                for (DnsCombo combo : dnsCombos) {
+
+                    if (combo.id.equals(comboId)) {
+
+                        selectedDnsCombos.add(combo);
+                        break;
+                    }
+                }
+            }
+
+            dnsSelector.setText("", false);
+            customDns.setText("");
+
+            if (!selectedDnsCombos.isEmpty()) {
+
+                DnsCombo combo =
+                        selectedDnsCombos.get(0);
+
+                if (combo.dnsPrimaria != null &&
+                        !combo.dnsPrimaria.trim().isEmpty()) {
+
+                    dnsSelector.setText(
+                            combo.dnsPrimaria,
+                            false
+                    );
+                }
+
+                if (combo.dnsSecundaria != null &&
+                        !combo.dnsSecundaria.trim().isEmpty()) {
+
+                    customDns.setText(
+                            combo.dnsSecundaria
+                    );
+                }
+
+                dnsStatus.setText(
+                        "🔵 DNS REGISTRADA\n" +
+                        combo.dnsPrimaria +
+                        "\nSecundaria: " +
+                        (
+                                combo.dnsSecundaria == null
+                                        ? "No registrada"
+                                        : combo.dnsSecundaria
+                        )
+                );
+
+            } else {
+
+                dnsStatus.setText(
+                        "⚪ Este juego no tiene todavía " +
+                        "una DNS registrada."
+                );
+            }
+
+            /*
+             * Estado PSN de la base local.
+             */
+            if (game.psnActivo) {
+
+                gameInfo.setText(
+                        "FICHA: " + game.nombre +
+                        "\n🟢 PSN ACTIVO"
+                );
+
+            } else {
+
+                gameInfo.setText(
+                        "FICHA: " + game.nombre
+                );
+            }
+
+            /*
+             * Verificación de comunidad.
+             */
+            if (game.requiereVerificacion) {
+
+                verificationCard.setText(
+                        "⚠️ VERIFICACIÓN EN COMUNIDAD REQUERIDA\n\n" +
+                        "Este juego no se marca como PSN ACTIVO.\n" +
+                        "La disponibilidad debe comprobarse mediante " +
+                        "la comunidad correspondiente."
+                );
+
+                verificationCard.setVisibility(
+                        View.VISIBLE
+                );
+
+            } else {
+
+                verificationCard.setVisibility(
+                        View.GONE
+                );
+            }
+
+            /*
+             * MOD / PKG / comandos.
+             */
+            if (game.modPkgRequisito != null ||
+                    game.versionRequisito != null ||
+                    game.comandosConsola != null) {
+
+                StringBuilder req =
+                        new StringBuilder();
+
+                req.append(
+                        "📦 REQUIERE MOD / PKG / " +
+                        "COMANDOS EN CONSOLA IN-GAME"
+                );
+
+                if (game.modPkgRequisito != null) {
+
+                    req.append("\nMOD/PKG: ")
+                       .append(game.modPkgRequisito);
+                }
+
+                if (game.versionRequisito != null) {
+
+                    req.append("\nVersión: ")
+                       .append(game.versionRequisito);
+                }
+
+                if (game.comandosConsola != null) {
+
+                    req.append("\nComandos: ")
+                       .append(game.comandosConsola);
+                }
+
+                requirementCard.setText(
+                        req.toString()
+                );
+
+                requirementCard.setVisibility(
+                        View.VISIBLE
+                );
+
+            } else {
+
+                requirementCard.setVisibility(
+                        View.GONE
+                );
+            }
+        }
+);
+    setContentView(scroll);
     }
 
-    void p2p(boolean create) {
-        log.setText("");
+    private void testDnsSimultaneously() {
 
-        String ws = server.getText().toString().trim();
+        final String primary =
+                dnsSelector.getText().toString().trim();
 
-        if (ws.isEmpty()) {
-            a(
-                "Falta URL WebSocket. " +
-                "Despliega worker/signaling del proyecto " +
-                "y coloca wss://..."
+        final String secondary =
+                customDns.getText().toString().trim();
+
+        if (primary.isEmpty() || secondary.isEmpty()) {
+            status.setText(
+                    "⚠️ Introduce DNS primaria y DNS secundaria."
             );
             return;
         }
 
-        String code = room.getText().toString().trim();
-
-        if (create) {
-            code = "";
+        if (!isValidIpv4(primary) || !isValidIpv4(secondary)) {
+            status.setText(
+                    "⚠️ Una de las DNS no tiene una dirección IPv4 válida."
+            );
+            return;
         }
 
-        String finalCode = code;
-        String d = dns.getText().toString().trim();
+        testButton.setEnabled(false);
 
-        a(
-            create
-            ? "CREANDO SALA..."
-            : "UNIENDO SALA " + code + "..."
+        status.setText(
+                "⏳ Probando DNS primaria y secundaria " +
+                "simultáneamente..."
         );
 
-        Executors.newSingleThreadExecutor().execute(() -> {
+        dnsExecutor.execute(() -> {
+
+            final DnsTester.Result[] results =
+                    new DnsTester.Result[2];
+
+            Thread primaryThread = new Thread(() -> {
+                results[0] =
+                        DnsTester.queryA(
+                                primary,
+                                "example.com",
+                                3000
+                        );
+            });
+
+            Thread secondaryThread = new Thread(() -> {
+                results[1] =
+                        DnsTester.queryA(
+                                secondary,
+                                "example.com",
+                                3000
+                        );
+            });
+
+            long start = System.currentTimeMillis();
+
+            primaryThread.start();
+            secondaryThread.start();
+
             try {
-                P2PSession session =
-                    new P2PSession(
-                        ws,
-                        finalCode,
-                        create,
-                        d,
-                        "game=" + game.getSelectedItem().toString(),
-                        this,
-                        this::a
-                    );
-
-                session.start();
-
-            } catch (Exception e) {
-                a("ERROR P2P: " + e.getMessage());
+                primaryThread.join();
+                secondaryThread.join();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
+
+            long total =
+                    System.currentTimeMillis() - start;
+
+            runOnUiThread(() -> {
+
+                testButton.setEnabled(true);
+
+                showDnsResult(
+                        primary,
+                        secondary,
+                        results[0],
+                        results[1],
+                        total
+                );
+            });
         });
+    }
+
+    private void showDnsResult(
+            String primary,
+            String secondary,
+            DnsTester.Result primaryResult,
+            DnsTester.Result secondaryResult,
+            long totalMs) {
+
+        boolean primaryOk = primaryResult != null &&
+                primaryResult.ok;
+
+        boolean secondaryOk = secondaryResult != null &&
+                secondaryResult.ok;
+
+        String title;
+
+        if (primaryOk && secondaryOk) {
+
+            title =
+                    "🟢 COMBO EXCELENTE / LISTO PARA JUGAR";
+
+        } else if (!primaryOk && secondaryOk) {
+
+            title =
+                    "🟡 FUNCIONANDO EN RESPALDO " +
+                    "(Ligera demora al conectar)";
+
+        } else if (primaryOk && !secondaryOk) {
+
+            title =
+                    "🟡 DNS PRIMARIA FUNCIONANDO / " +
+                    "SECUNDARIA SIN RESPUESTA";
+
+        } else {
+
+            title =
+                    "🔴 SERVIDORES DNS SIN RESPUESTA";
+        }
+
+        StringBuilder result = new StringBuilder();
+
+        result.append(
+                "⚡ RESULTADO DE PRUEBA DNS\n\n"
+        );
+
+        result.append(title).append("\n\n");
+
+        result.append("DNS PRIMARIA\n");
+
+        if (primaryResult != null) {
+
+            if (primaryResult.ok) {
+                result.append("🟢 OK\n");
+            } else if (primaryResult.message != null &&
+                    primaryResult.message.contains("RCODE=5")) {
+                result.append(
+                        "🟠 RESPONDE PERO RECHAZA LA CONSULTA\n"
+                );
+            } else {
+                result.append("🔴 SIN RESPUESTA\n");
+            }
+
+            result.append("IP: ")
+                  .append(primary)
+                  .append("\n");
+
+            result.append("Tiempo: ")
+                  .append(primaryResult.rttMs)
+                  .append(" ms\n");
+
+            result.append(primaryResult.message)
+                  .append("\n");
+
+        } else {
+            result.append("🔴 SIN RESULTADO\n");
+        }
+
+        result.append("\nDNS SECUNDARIA\n");
+
+        if (secondaryResult != null) {
+
+            if (secondaryResult.ok) {
+                result.append("🟢 OK\n");
+            } else if (secondaryResult.message != null &&
+                    secondaryResult.message.contains("RCODE=5")) {
+                result.append(
+                        "🟠 RESPONDE PERO RECHAZA LA CONSULTA\n"
+                );
+            } else {
+                result.append("🔴 SIN RESPUESTA\n");
+            }
+
+            result.append("IP: ")
+                  .append(secondary)
+                  .append("\n");
+
+            result.append("Tiempo: ")
+                  .append(secondaryResult.rttMs)
+                  .append(" ms\n");
+
+            result.append(secondaryResult.message)
+                  .append("\n");
+
+        } else {
+            result.append("🔴 SIN RESULTADO\n");
+        }
+
+        result.append("\nTiempo total: ")
+              .append(totalMs)
+              .append(" ms\n");
+
+        result.append(
+                "\nConsulta real: DNS A / UDP 53"
+        );
+
+        status.setText(result.toString());
+    }
+
+    private boolean isValidIpv4(String ip) {
+
+        String[] parts = ip.split("\\.");
+
+        if (parts.length != 4) {
+            return false;
+        }
+
+        try {
+
+            for (String part : parts) {
+
+                int value = Integer.parseInt(part);
+
+                if (value < 0 || value > 255) {
+                    return false;
+                }
+            }
+
+            return true;
+
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 }

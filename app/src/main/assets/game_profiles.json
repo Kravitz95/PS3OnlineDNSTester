@@ -1,121 +1,1025 @@
 {
-  "schema": 1,
-  "sources": [
+  "schema": 2,
+  "games": [
     {
-      "name": "Sony PS3 manual",
-      "url": "https://manuals.playstation.net/document/es/ps3/current/settings/connecttest.html",
-      "note": "PSN and direct PS3 game communication; UDP 3658 may vary behind NAT."
+      "id": "ps3_psn_general",
+      "nombre": "PS3/PSN general",
+      "alias": [
+        "PSN",
+        "PlayStation Network"
+      ],
+      "genero": "General",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": []
     },
     {
-      "name": "Activision Call of Duty ports",
-      "url": "https://support.activision.com/es/articles/ports-used-for-call-of-duty-games",
-      "note": "Official current Activision table; only PS3 rows copied where explicitly listed."
+      "id": "cod_bo2",
+      "nombre": "Call of Duty: Black Ops II",
+      "alias": [
+        "Black Ops II",
+        "BO2",
+        "COD BO2"
+      ],
+      "genero": "FPS",
+      "psnActivo": true,
+      "requiereVerificacion": false,
+      "dnsComboIds": [],
+      "notas": "Procedimiento de recuperación: cerrar sesión PSN, iniciar multijugador local, esperar al menos 5 segundos, salir e iniciar online desde el juego."
     },
     {
-      "name": "Rockstar GTA IV",
-      "url": "https://support.rockstargames.com/articles/6YpjOeQMBquEhnZ6HG3DFh/which-ports-are-required-to-play-gta-iv-via-the-ps3-network",
-      "note": "Official Rockstar PS3 GTA IV ports."
+      "id": "cod_ghosts",
+      "nombre": "Call of Duty: Ghosts",
+      "alias": [
+        "Ghosts",
+        "COD Ghosts"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": []
+    },
+    {
+      "id": "cod_aw",
+      "nombre": "Call of Duty: Advanced Warfare",
+      "alias": [
+        "Advanced Warfare",
+        "COD AW"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": []
+    },
+    {
+      "id": "cod_bo3",
+      "nombre": "Call of Duty: Black Ops III",
+      "alias": [
+        "Black Ops III",
+        "BO3",
+        "COD BO3"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": []
+    },
+    {
+      "id": "gta_iv",
+      "nombre": "Grand Theft Auto IV",
+      "alias": [
+        "GTA IV",
+        "GTA 4"
+      ],
+      "genero": "Acción",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": []
+    },
+    {
+      "id": "tlou",
+      "nombre": "The Last of Us",
+      "alias": [
+        "TLOU"
+      ],
+      "genero": "Acción",
+      "psnActivo": false,
+      "requiereVerificacion": true,
+      "dnsComboIds": [
+        "dns_tlou_uncharted"
+      ],
+      "comunidadId": "uncharted_reloaded",
+      "notas": "Requiere DNS y verificación en la comunidad. No mostrar PSN ACTIVO."
+    },
+    {
+      "id": "uncharted_2",
+      "nombre": "Uncharted 2",
+      "alias": [
+        "Uncharted 2 Among Thieves"
+      ],
+      "genero": "Acción",
+      "psnActivo": false,
+      "requiereVerificacion": true,
+      "dnsComboIds": [
+        "dns_tlou_uncharted"
+      ],
+      "comunidadId": "uncharted_reloaded",
+      "notas": "Requiere verificación en la comunidad. No mostrar PSN ACTIVO."
+    },
+    {
+      "id": "uncharted_3",
+      "nombre": "Uncharted 3",
+      "alias": [
+        "Uncharted 3 Drake's Deception"
+      ],
+      "genero": "Acción",
+      "psnActivo": false,
+      "requiereVerificacion": true,
+      "dnsComboIds": [
+        "dns_tlou_uncharted"
+      ],
+      "comunidadId": "uncharted_reloaded",
+      "notas": "Requiere verificación en la comunidad. No mostrar PSN ACTIVO."
+    },
+    {
+      "id": "tdu2",
+      "nombre": "Test Drive Unlimited 2",
+      "alias": [
+        "TDU2",
+        "TDU World"
+      ],
+      "genero": "Carreras",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_tdu2"
+      ]
+    },
+    {
+      "id": "motorstorm_apocalypse",
+      "nombre": "MotorStorm Apocalypse",
+      "alias": [
+        "MotorStorm Apocalypse"
+      ],
+      "genero": "Carreras",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_motorstorm_apocalypse"
+      ]
+    },
+    {
+      "id": "rock_band_3",
+      "nombre": "Rock Band 3",
+      "alias": [
+        "Rock Band 3 Deluxe"
+      ],
+      "genero": "Música",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_rock_band_3"
+      ],
+      "modPkgRequisito": "Rock Band 3 Deluxe"
+    },
+    {
+      "id": "monster_hunter_frontier",
+      "nombre": "Monster Hunter Frontier",
+      "alias": [
+        "Monster Hunter Frontier G"
+      ],
+      "genero": "RPG",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_mhf"
+      ]
+    },
+    {
+      "id": "battlefield_1943",
+      "nombre": "Battlefield 1943",
+      "alias": [
+        "BF1943"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_bf1943_nba07"
+      ]
+    },
+    {
+      "id": "nba_07",
+      "nombre": "NBA 07",
+      "alias": [
+        "NBA 07 PS3"
+      ],
+      "genero": "Deportes",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_bf1943_nba07"
+      ]
+    },
+    {
+      "id": "rocket_league_ps3",
+      "nombre": "Rocket League",
+      "alias": [
+        "Rocket League PS3",
+        "Supersonic Acrobatic Rocket-Powered Battle-Cars"
+      ],
+      "genero": "Deportes",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_rocket_league"
+      ]
+    },
+    {
+      "id": "battlefield_reborn",
+      "nombre": "Battlefield Reborn",
+      "alias": [
+        "Battlefield 3 Reborn",
+        "BF Reborn"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_battlefield_reborn"
+      ]
+    },
+    {
+      "id": "ghost_recon_future_soldier",
+      "nombre": "Ghost Recon Future Soldier",
+      "alias": [
+        "Future Soldier",
+        "GRFS"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ghost_recon_future_soldier"
+      ]
+    },
+    {
+      "id": "unreal_tournament_3",
+      "nombre": "Unreal Tournament 3",
+      "alias": [
+        "UT3"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_unreal_tournament_3"
+      ]
+    },
+    {
+      "id": "wwe_2k14",
+      "nombre": "WWE 2K14",
+      "alias": [
+        "WWE 2K14"
+      ],
+      "genero": "Lucha",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_wwe_2k14"
+      ]
+    },
+    {
+      "id": "pes_2018_npbu_usa",
+      "nombre": "PES 2018 NPBU USA",
+      "alias": [
+        "PES 2018"
+      ],
+      "genero": "Deportes",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_pes_2018"
+      ]
+    },
+    {
+      "id": "wipeout_hd",
+      "nombre": "Wipeout HD",
+      "alias": [
+        "Wipeout HD PS3"
+      ],
+      "genero": "Carreras",
+      "psnActivo": false,
+      "requiereVerificacion": true,
+      "dnsComboIds": [
+        "dns_ps_one"
+      ],
+      "notas": "DNS primaria de PS ONE; la secundaria puede ser cualquier DNS pública."
+    },
+    {
+      "id": "killzone_2",
+      "nombre": "Killzone 2",
+      "alias": [
+        "Killzone II"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": true,
+      "dnsComboIds": [
+        "dns_ps_one"
+      ],
+      "notas": "DNS primaria de PS ONE; la secundaria puede ser cualquier DNS pública."
+    },
+    {
+      "id": "motorstorm_rift",
+      "nombre": "MotorStorm Rift",
+      "alias": [
+        "MotorStorm"
+      ],
+      "genero": "Carreras",
+      "psnActivo": false,
+      "requiereVerificacion": true,
+      "dnsComboIds": [
+        "dns_ps_one"
+      ],
+      "notas": "DNS primaria de PS ONE; la secundaria puede ser cualquier DNS pública."
+    },
+    {
+      "id": "socom_confrontation",
+      "nombre": "SOCOM Confrontation",
+      "alias": [
+        "SOCOM"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": true,
+      "dnsComboIds": [
+        "dns_ps_one"
+      ],
+      "notas": "DNS primaria de PS ONE; la secundaria puede ser cualquier DNS pública."
+    },
+    {
+      "id": "warhawk",
+      "nombre": "Warhawk",
+      "alias": [
+        "Warhawk PS3"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": true,
+      "dnsComboIds": [
+        "dns_ps_one"
+      ],
+      "notas": "DNS primaria de PS ONE; la secundaria puede ser cualquier DNS pública."
+    },
+    {
+      "id": "twisted_metal_black_online",
+      "nombre": "Twisted Metal Black Online",
+      "alias": [
+        "Twisted Metal Black"
+      ],
+      "genero": "Acción",
+      "psnActivo": false,
+      "requiereVerificacion": true,
+      "dnsComboIds": [
+        "dns_ps_one"
+      ],
+      "notas": "DNS primaria de PS ONE; la secundaria puede ser cualquier DNS pública."
+    },
+    {
+      "id": "ghost_recon_aw2",
+      "nombre": "Ghost Recon Advanced Warfighter 2",
+      "alias": [
+        "GRAW 2"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "haze",
+      "nombre": "HAZE",
+      "alias": [
+        "HAZE 2008"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "splinter_cell_da",
+      "nombre": "Splinter Cell: Double Agent",
+      "alias": [
+        "Splinter Cell DA"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "race_driver_grid",
+      "nombre": "Race Driver: GRID",
+      "alias": [
+        "GRID"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "colin_mcrae_dirt",
+      "nombre": "Colin McRae DiRT",
+      "alias": [
+        "DiRT"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "stuntman_ignition",
+      "nombre": "Stuntman Ignition",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "sega_the_club",
+      "nombre": "SEGA: The Club",
+      "alias": [
+        "The Club"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "smackdown_vs_raw_2008",
+      "nombre": "Smackdown VS RAW 2008",
+      "alias": [
+        "SVR 2008"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "wolfenstein_2009",
+      "nombre": "Wolfenstein (2009)",
+      "alias": [
+        "Wolfenstein"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "singularity",
+      "nombre": "Singularity",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "marvel_ultimate_alliance_2",
+      "nombre": "Marvel Ultimate Alliance 2",
+      "alias": [
+        "MUA2"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "pure_football",
+      "nombre": "Pure Football",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "geometry_wars_3",
+      "nombre": "Geometry Wars 3: Dimensions Evolved",
+      "alias": [
+        "Geometry Wars 3"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "guitar_hero_legends",
+      "nombre": "Guitar Hero: Legends of Rock",
+      "alias": [
+        "Guitar Hero III"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "guitar_hero_aerosmith",
+      "nombre": "Guitar Hero: Aerosmith",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "guitar_hero_world_tour",
+      "nombre": "Guitar Hero: World Tour",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "guitar_hero_metallica",
+      "nombre": "Guitar Hero: Metallica",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "guitar_hero_smash_hits",
+      "nombre": "Guitar Hero: Smash/Greatest Hits",
+      "alias": [
+        "Greatest Hits"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "guitar_hero_van_halen",
+      "nombre": "Guitar Hero: Van Halen",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "guitar_hero_5",
+      "nombre": "Guitar Hero 5",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "guitar_hero_warriors",
+      "nombre": "Guitar Hero: Warriors of Rock",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "band_hero",
+      "nombre": "Band Hero",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "dj_hero",
+      "nombre": "DJ Hero",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "dj_hero_2",
+      "nombre": "DJ Hero 2",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "tony_hawk_shred",
+      "nombre": "Tony Hawk: SHRED",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "007_quantum",
+      "nombre": "007: Quantum of Solace",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "007_bloodstone",
+      "nombre": "007: Bloodstone",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "007_goldeneye",
+      "nombre": "007: Goldeneye Reloaded",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "007_legends",
+      "nombre": "007: Legends",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "history_channel_battle_pacific",
+      "nombre": "History Channel: Battle for the Pacific",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "soldier_of_fortune_payback",
+      "nombre": "Soldier of Fortune: Payback",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "score_baja_1000",
+      "nombre": "Score International Baja 1000: World Championship Off-Road Racing",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "transformers_revenge",
+      "nombre": "Transformers: Revenge of the Fallen",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "transformers_war",
+      "nombre": "Transformers: War for Cybertron",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "transformers_fall",
+      "nombre": "Transformers: Fall of Cybertron",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "transformers_dark",
+      "nombre": "Transformers: Dark of the Moon",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "transformers_rise",
+      "nombre": "Transformers: Rise of the Dark Spark",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "far_cry_2",
+      "nombre": "Far Cry 2",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ],
+      "notas": "DNS compartida PS3 Reborn; verificar disponibilidad específica."
+    },
+    {
+      "id": "shaun_white",
+      "nombre": "Shaun White Snowboarding",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "enemy_territory_quake_wars",
+      "nombre": "Enemy Territory: Quake Wars",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "tom_clancy_endwar",
+      "nombre": "Tom Clancy's: EndWar",
+      "alias": [
+        "EndWar"
+      ],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
+    },
+    {
+      "id": "far_cry_3",
+      "nombre": "Far Cry 3",
+      "alias": [],
+      "genero": "FPS",
+      "psnActivo": false,
+      "requiereVerificacion": false,
+      "dnsComboIds": [
+        "dns_ps3_reborn"
+      ]
     }
   ],
-  "profiles": [
+  "dns_combos": [
     {
-      "game": "PS3/PSN general",
-      "platform": "PS3",
-      "tcp": [
-        80,
-        443,
-        3478,
-        3479,
-        3480,
-        5223,
-        8080
-      ],
-      "udp": [
-        3478,
-        3479,
-        3658
-      ],
-      "confidence": "official-Sony",
-      "note": "3658 is documented for direct PS3 game/voice/video traffic; Sony notes NAT may require a different port."
+      "id": "dns_tlou_uncharted",
+      "dnsPrimaria": "51.75.22.125",
+      "dnsSecundaria": "1.1.1.1",
+      "votosPositivos": 0,
+      "votosNegativos": 0,
+      "origen": "REGISTRADA",
+      "estado": "AZUL_COMUNIDAD",
+      "fuente": "Comunidad",
+      "grupoId": "tlou_uncharted",
+      "nota": "Si no funciona, probar 0.0.0.0 como alternativa. Requiere verificación comunitaria."
     },
     {
-      "game": "Call of Duty: Black Ops II",
-      "platform": "PS3",
-      "tcp": [
-        5223
-      ],
-      "udp": [
-        5223,
-        3478,
-        3479,
-        3658
-      ],
-      "confidence": "official-Activision"
+      "id": "dns_tdu2",
+      "dnsPrimaria": "77.68.126.25",
+      "dnsSecundaria": "1.1.1.1",
+      "votosPositivos": 0,
+      "votosNegativos": 0,
+      "origen": "REGISTRADA",
+      "estado": "AZUL_COMUNIDAD",
+      "fuente": "TDU World",
+      "juegoId": "tdu2",
+      "nota": "También puede utilizarse 8.8.8.8 como secundaria."
     },
     {
-      "game": "Call of Duty: Ghosts",
-      "platform": "PS3",
-      "tcp": [
-        5223
-      ],
-      "udp": [
-        5223,
-        3478,
-        3479,
-        3658
-      ],
-      "confidence": "official-Activision"
+      "id": "dns_motorstorm_apocalypse",
+      "dnsPrimaria": "51.79.41.185",
+      "dnsSecundaria": "1.1.1.1",
+      "votosPositivos": 0,
+      "votosNegativos": 0,
+      "origen": "REGISTRADA",
+      "estado": "AZUL_COMUNIDAD",
+      "fuente": "Comunidad",
+      "juegoId": "motorstorm_apocalypse"
     },
     {
-      "game": "Call of Duty: Advanced Warfare",
-      "platform": "PS3",
-      "tcp": [
-        5223
-      ],
-      "udp": [
-        5223,
-        3478,
-        3479,
-        3658
-      ],
-      "confidence": "official-Activision"
+      "id": "dns_rock_band_3",
+      "dnsPrimaria": "78.141.231.152",
+      "dnsSecundaria": "1.1.1.1",
+      "votosPositivos": 0,
+      "votosNegativos": 0,
+      "origen": "REGISTRADA",
+      "estado": "AZUL_COMUNIDAD",
+      "fuente": "Comunidad",
+      "juegoId": "rock_band_3",
+      "nota": "Rock Band 3 Deluxe."
     },
     {
-      "game": "Call of Duty: Black Ops III",
-      "platform": "PS3",
-      "tcp": [
-        3074,
-        5223
-      ],
-      "udp": [
-        5223,
-        3478,
-        3479,
-        3658
-      ],
-      "confidence": "official-Activision"
+      "id": "dns_mhf",
+      "dnsPrimaria": "5.161.64.71",
+      "dnsSecundaria": "0.0.0.0",
+      "votosPositivos": 0,
+      "votosNegativos": 0,
+      "origen": "REGISTRADA",
+      "estado": "AZUL_COMUNIDAD",
+      "fuente": "Comunidad",
+      "juegoId": "monster_hunter_frontier"
     },
     {
-      "game": "Grand Theft Auto IV",
-      "platform": "PS3",
-      "tcp": [
-        8001,
-        27900,
-        80,
-        8080,
-        443,
-        5223,
-        3478,
-        3479,
-        3480
-      ],
-      "udp": [
-        6672,
-        28900,
-        3478,
-        3479
-      ],
-      "confidence": "official-Rockstar"
+      "id": "dns_bf1943_nba07",
+      "dnsPrimaria": "67.222.156.250",
+      "dnsSecundaria": "1.1.1.1",
+      "votosPositivos": 0,
+      "votosNegativos": 0,
+      "origen": "REGISTRADA",
+      "estado": "AZUL_COMUNIDAD",
+      "fuente": "Comunidad",
+      "grupoId": "bf1943_nba07",
+      "nota": "También puede utilizarse 8.8.8.8 como secundaria."
+    },
+    {
+      "id": "dns_rocket_league",
+      "dnsPrimaria": "209.74.81.7",
+      "dnsSecundaria": "1.1.1.1",
+      "votosPositivos": 0,
+      "votosNegativos": 0,
+      "origen": "REGISTRADA",
+      "estado": "AZUL_COMUNIDAD",
+      "fuente": "Comunidad",
+      "juegoId": "rocket_league_ps3",
+      "nota": "Relacionado con SARPD/mod."
+    },
+    {
+      "id": "dns_battlefield_reborn",
+      "dnsPrimaria": "181.224.24.54",
+      "dnsSecundaria": "1.1.1.1",
+      "votosPositivos": 0,
+      "votosNegativos": 0,
+      "origen": "REGISTRADA",
+      "estado": "AZUL_COMUNIDAD",
+      "fuente": "Comunidad",
+      "juegoId": "battlefield_reborn",
+      "nota": "También puede utilizarse 8.8.8.8 como secundaria."
+    },
+    {
+      "id": "dns_ghost_recon_future_soldier",
+      "dnsPrimaria": "146.190.205.197",
+      "dnsSecundaria": "1.1.1.1",
+      "votosPositivos": 0,
+      "votosNegativos": 0,
+      "origen": "REGISTRADA",
+      "estado": "AZUL_COMUNIDAD",
+      "fuente": "Comunidad",
+      "juegoId": "ghost_recon_future_soldier"
+    },
+    {
+      "id": "dns_unreal_tournament_3",
+      "dnsPrimaria": "15.204.233.35",
+      "dnsSecundaria": "1.1.1.1",
+      "votosPositivos": 0,
+      "votosNegativos": 0,
+      "origen": "REGISTRADA",
+      "estado": "AZUL_COMUNIDAD",
+      "fuente": "Comunidad",
+      "juegoId": "unreal_tournament_3"
+    },
+    {
+      "id": "dns_wwe_2k14",
+      "dnsPrimaria": "192.236.168.216",
+      "dnsSecundaria": "1.1.1.1",
+      "votosPositivos": 0,
+      "votosNegativos": 0,
+      "origen": "REGISTRADA",
+      "estado": "AZUL_COMUNIDAD",
+      "fuente": "Comunidad",
+      "juegoId": "wwe_2k14"
+    },
+    {
+      "id": "dns_pes_2018",
+      "dnsPrimaria": "3.136.0.78",
+      "dnsSecundaria": "3.136.0.78",
+      "votosPositivos": 0,
+      "votosNegativos": 0,
+      "origen": "REGISTRADA",
+      "estado": "AZUL_COMUNIDAD",
+      "fuente": "Comunidad",
+      "juegoId": "pes_2018_npbu_usa",
+      "nota": "PES 2018 NPBU USA."
+    },
+    {
+      "id": "dns_ps_one",
+      "dnsPrimaria": "185.194.142.4",
+      "dnsSecundaria": "1.1.1.1",
+      "votosPositivos": 0,
+      "votosNegativos": 0,
+      "origen": "REGISTRADA",
+      "estado": "AZUL_COMUNIDAD",
+      "fuente": "PS ONE",
+      "grupoId": "ps_one",
+      "secundariaPublica": true,
+      "nota": "La secundaria puede ser cualquier DNS pública."
+    },
+    {
+      "id": "dns_ps3_reborn",
+      "dnsPrimaria": "146.190.205.197",
+      "dnsSecundaria": "8.8.8.8",
+      "votosPositivos": 0,
+      "votosNegativos": 0,
+      "origen": "REGISTRADA",
+      "estado": "AZUL_COMUNIDAD",
+      "fuente": "PS3 Reborn",
+      "grupoId": "ps3_reborn",
+      "nota": "Combo compartido por el grupo PS3 Reborn."
     }
   ]
 }

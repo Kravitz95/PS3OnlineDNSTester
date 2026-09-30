@@ -1,5 +1,11 @@
 .gradle/
+build/
 **/build/
-local.properties
+node_modules/
 *.apk
-*.aab
+*.zip
+backup_v31/
+backup_v40/
+app/src/main/java/com/ps3online/dnstester/MainActivity.java.bak
+local.properties
+signaling-server/server.log

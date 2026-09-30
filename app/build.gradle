@@ -20,3 +20,24 @@ dependencies {
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 }
+
+afterEvaluate {
+    tasks.matching { it.name == "assembleDebug" }.configureEach {
+        doLast {
+            def apk = file("$projectDir/build/outputs/apk/debug/app-debug.apk")
+            def downloadDir = file("/sdcard/Download")
+
+            if (apk.exists() && downloadDir.exists()) {
+                copy {
+                    from apk
+                    into downloadDir
+                    rename { "PS3OnlineAssistant-v4.0-debug.apk" }
+                }
+
+                println("APK COPIADA A: /sdcard/Download/PS3OnlineAssistant-v4.0-debug.apk")
+            } else {
+                println("AVISO: No se pudo copiar la APK a Download.")
+            }
+        }
+    }
+}
