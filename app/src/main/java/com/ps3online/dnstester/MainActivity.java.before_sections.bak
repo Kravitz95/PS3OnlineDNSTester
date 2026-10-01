@@ -2,7 +2,6 @@ package com.ps3online.dnstester;
 import android.content.Intent;
 import android.net.Uri;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.View;
@@ -342,7 +341,7 @@ gameSelector.addTextChangedListener(
                                         );
                                     }
 
-                                    gameSelector.showDropDown();
+                                    gameSelector.show();
                                 });
                             }
 
@@ -381,6 +380,7 @@ gameSelector.addTextChangedListener(
         }
 );
 
+        gameSelector.setAdapter(gameAdapter);
 gameSearchAdapter =
         new ArrayAdapter<>(
                 this,
@@ -850,11 +850,11 @@ root.addView(dnsInstruction);
         labButton.setAllCaps(false);
         root.addView(labButton);
         // ============================================================
-        // 5. 🛠️ ESTADO DEL SISTEMA
+        // 6. 🛠️ ESTADO DEL SISTEMA
         // ============================================================
 
         TextView systemTitle = new TextView(this);
-        systemTitle.setText("5. 🛠️ ESTADO DEL SISTEMA");
+        systemTitle.setText("6. 🛠️ ESTADO DEL SISTEMA");
         systemTitle.setTextSize(18);
         systemTitle.setGravity(Gravity.CENTER);
         systemTitle.setPadding(0, 32, 0, 10);
@@ -984,7 +984,7 @@ root.addView(dnsInstruction);
         systemInfo.setPadding(20, 8, 20, 12);
         root.addView(systemInfo);
         TextView communityTitle = new TextView(this);
-        communityTitle.setText("6. 👥 COMUNIDADES");
+        communityTitle.setText("5. 👥 COMUNIDADES");
         communityTitle.setTextSize(18);
         communityTitle.setGravity(Gravity.CENTER);
         communityTitle.setPadding(0, 32, 0, 10);

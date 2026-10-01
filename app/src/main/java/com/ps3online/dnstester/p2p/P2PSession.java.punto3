@@ -1,0 +1,902 @@
+package com.ps3online.dnstester.p2p;
+
+import android.content.Context;
+
+import com.ps3online.dnstester.stun.StunP2P;
+
+import org.json.JSONObject;
+
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
+import java.net.SocketTimeoutException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.WebSocket;
+import okhttp3.WebSocketListener;
+
+public class P2PSession {
+
+    private static final String DEFAULT_WS_URL =
+            "wss://ps3-online-connect-signaling.onrender.com";
+
+    private static final int UDP_TEST_DURATION_MS = 20000;
+    private static final int UDP_PACKET_COUNT = 100;
+    private static final int UDP_INTERVAL_MS = 100;
+
+    private final String wsUrl;
+    private final String initialRoom;
+    private final boolean host;
+    private final String dns;
+    private final String info;
+    private final Context ctx;
+    private final Consumer<String> out;
+
+    private OkHttpClient client;
+    private WebSocket ws;
+
+    private DatagramSocket udp;
+    private InetSocketAddress peer;
+
+    private String room = "";
+    private String role = "";
+
+    private volatile boolean running = false;
+    private volatile boolean udpStarted = false;
+
+    private long sent = 0;
+    private long received = 0;
+    private long firstPacketTime = 0;
+    private long lastPacketTime = 0;
+
+    public P2PSession(
+            String u,
+            String r,
+            boolean h,
+            String d,
+            String i,
+            Context c,
+            Consumer<String> o
+    ) {
+        wsUrl = (u == null || u.trim().isEmpty())
+                ? DEFAULT_WS_URL
+                : u.trim();
+
+        initialRoom = r == null ? "" : r.trim().toUpperCase();
+        host = h;
+        dns = d == null ? "" : d;
+        info = i == null ? "" : i;
+        ctx = c;
+        out = o;
+    }
+
+    public void start() throws Exception {
+
+        if (running) {
+            out.accept("⚠️ Ya existe una sesión P2P.");
+            return;
+        }
+
+        running = true;
+
+        out.accept("🔎 INICIANDO DIAGNÓSTICO P2P...");
+        out.accept("🌐 Servidor: " + wsUrl);
+
+        /*
+         * 1. STUN
+         */
+        out.accept("📡 STUN: buscando endpoint público...");
+
+        StunP2P.Result st = StunP2P.discover(
+                "stun.cloudflare.com",
+                3478,
+                6000
+        );
+
+        if (!st.ok) {
+            running = false;
+            out.accept("🔴 STUN: " + st.message);
+            throw new Exception("STUN no respondió");
+        }
+
+        udp = st.socket;
+
+        out.accept("🟢 STUN: " + st.message);
+
+        /*
+         * 2. CONEXIÓN DE SEÑALIZACIÓN
+         */
+        client = new OkHttpClient.Builder()
+                .pingInterval(25, TimeUnit.SECONDS)
+                .build();
+
+        Request request = new Request.Builder()
+                .url(wsUrl)
+                .build();
+
+        ws = client.newWebSocket(
+                request,
+                new WebSocketListener() {
+
+                    @Override
+                    public void onOpen(
+                            WebSocket webSocket,
+                            Response response
+                    ) {
+                        P2PSession.this.ws = webSocket;
+
+                        out.accept(
+                                "🟢 SEÑALIZACIÓN: conectada"
+                        );
+
+                        try {
+
+                            if (host) {
+
+                                JSONObject create =
+                                        new JSONObject();
+
+                                create.put(
+                                        "type",
+                                        "create"
+                                );
+
+                                webSocket.send(
+                                        create.toString()
+                                );
+
+                                out.accept(
+                                        "🏠 CREAR SALA: solicitando código..."
+                                );
+
+                            } else {
+
+                                if (initialRoom.isEmpty()) {
+                                    out.accept(
+                                            "🔴 Falta el código de sala."
+                                    );
+                                    close();
+                                    return;
+                                }
+
+                                JSONObject join =
+                                        new JSONObject();
+
+                                join.put(
+                                        "type",
+                                        "join"
+                                );
+
+                                join.put(
+                                        "room",
+                                        initialRoom
+                                );
+
+                                webSocket.send(
+                                        join.toString()
+                                );
+
+                                out.accept(
+                                        "🚪 UNIRSE: buscando sala "
+                                                + initialRoom
+                                );
+                            }
+
+                        } catch (Exception e) {
+
+                            out.accept(
+                                    "🔴 SEÑALIZACIÓN: "
+                                            + e.getMessage()
+                            );
+                        }
+                    }
+
+                    @Override
+                    public void onMessage(
+                            WebSocket webSocket,
+                            String text
+                    ) {
+
+                        handleMessage(webSocket, text);
+                    }
+
+                    @Override
+                    public void onFailure(
+                            WebSocket webSocket,
+                            Throwable t,
+                            Response response
+                    ) {
+
+                        out.accept(
+                                "🔴 WEBSOCKET: "
+                                        + t.getMessage()
+                        );
+
+                        running = false;
+                    }
+
+                    @Override
+                    public void onClosed(
+                            WebSocket webSocket,
+                            int code,
+                            String reason
+                    ) {
+
+                        out.accept(
+                                "⚪ SEÑALIZACIÓN CERRADA"
+                        );
+
+                        running = false;
+                    }
+                }
+        );
+    }
+
+    private void handleMessage(
+            WebSocket webSocket,
+            String text
+    ) {
+
+        try {
+
+            JSONObject x =
+                    new JSONObject(text);
+
+            String type =
+                    x.optString("type");
+
+            /*
+             * CONEXIÓN
+             */
+            if (type.equals("connected")) {
+
+                out.accept(
+                        "🔗 Servidor de señalización conectado"
+                );
+
+                return;
+            }
+
+            /*
+             * SALA CREADA / CONFIRMADA
+             */
+            if (type.equals("room")) {
+
+                room =
+                        x.optString("room", "");
+
+                role =
+                        x.optString("role",
+                                host ? "host" : "guest");
+
+                out.accept(
+                        "🏠 SALA: " + room
+                );
+
+                if (host) {
+
+                    out.accept(
+                            "📲 Comparte este código con el otro móvil."
+                    );
+
+                } else {
+
+                    out.accept(
+                            "🟢 Unido a la sala correctamente."
+                    );
+                }
+
+                sendHello();
+
+                return;
+            }
+
+            /*
+             * SEGUNDO MÓVIL ENTRÓ
+             */
+            if (type.equals("peer_joined")) {
+
+                out.accept(
+                        "👥 El segundo móvil entró en la sala."
+                );
+
+                sendHello();
+
+                return;
+            }
+
+            /*
+             * INFORMACIÓN DEL OTRO MÓVIL
+             */
+            if (type.equals("peer")) {
+
+                String ip =
+                        x.optString("ip", "");
+
+                int port =
+                        x.optInt("port", 0);
+
+                if (ip.isEmpty() || port <= 0) {
+
+                    out.accept(
+                            "🟠 PEER: datos de conectividad inválidos."
+                    );
+
+                    return;
+                }
+
+                peer =
+                        new InetSocketAddress(
+                                ip,
+                                port
+                        );
+
+                out.accept(
+                        "📡 PEER DETECTADO: "
+                                + ip
+                                + ":"
+                                + port
+                );
+
+                out.accept(
+                        "🧪 Iniciando prueba UDP P2P..."
+                );
+
+                startUdpTest();
+
+                return;
+            }
+
+            /*
+             * CHAT
+             */
+            if (type.equals("chat")) {
+
+                String message =
+                        x.optString(
+                                "message",
+                                ""
+                        );
+
+                out.accept(
+                        "💬 OTRO: " + message
+                );
+
+                return;
+            }
+
+            /*
+             * SIGNAL
+             */
+            if (type.equals("signal")) {
+
+                out.accept(
+                        "📡 SEÑAL RECIBIDA: "
+                                + x.optString(
+                                "message",
+                                ""
+                        )
+                );
+
+                return;
+            }
+
+            /*
+             * PEER SALIÓ
+             */
+            if (type.equals("peer_left")) {
+
+                out.accept(
+                        "🟠 El otro móvil salió de la sala."
+                );
+
+                return;
+            }
+
+            /*
+             * ERROR
+             */
+            if (type.equals("error")) {
+
+                out.accept(
+                        "🔴 SERVIDOR: "
+                                + x.optString(
+                                "message",
+                                "Error desconocido"
+                        )
+                );
+
+                return;
+            }
+
+            /*
+             * PONG
+             */
+            if (type.equals("pong")) {
+
+                return;
+            }
+
+        } catch (Exception e) {
+
+            out.accept(
+                    "⚠️ Mensaje inválido: "
+                            + e.getMessage()
+            );
+        }
+    }
+
+    private void sendHello() {
+
+        if (ws == null) {
+            return;
+        }
+
+        if (udp == null) {
+            return;
+        }
+
+        try {
+
+            StunP2P.Result result =
+                    new StunP2P.Result(
+                            true,
+                            "",
+                            null,
+                            udp
+                    );
+
+            /*
+             * Recuperamos el endpoint que
+             * STUN ya dejó asociado al socket.
+             *
+             * La implementación actual de
+             * StunP2P mantiene el endpoint en
+             * el objeto Result solamente durante
+             * discover(), por lo que aquí usamos
+             * el endpoint almacenado en la sesión.
+             */
+
+        } catch (Exception e) {
+
+            out.accept(
+                    "⚠️ HELLO: "
+                            + e.getMessage()
+            );
+        }
+
+        /*
+         * El endpoint público se guarda cuando
+         * se realiza STUN.
+         */
+        sendHelloWithEndpoint();
+    }
+
+    private InetSocketAddress publicEndpoint;
+
+    private void sendHelloWithEndpoint() {
+
+        if (ws == null || publicEndpoint == null) {
+            return;
+        }
+
+        try {
+
+            JSONObject hello =
+                    new JSONObject();
+
+            hello.put(
+                    "type",
+                    "hello"
+            );
+
+            hello.put(
+                    "room",
+                    room
+            );
+
+            hello.put(
+                    "role",
+                    role
+            );
+
+            hello.put(
+                    "endpoint",
+                    publicEndpoint.getAddress()
+                            .getHostAddress()
+                            + ":"
+                            + publicEndpoint.getPort()
+            );
+
+            hello.put(
+                    "info",
+                    info
+            );
+
+            hello.put(
+                    "dns",
+                    dns
+            );
+
+            ws.send(
+                    hello.toString()
+            );
+
+            out.accept(
+                    "📡 HELLO enviado al servidor."
+            );
+
+        } catch (Exception e) {
+
+            out.accept(
+                    "⚠️ HELLO: "
+                            + e.getMessage()
+            );
+        }
+    }
+
+    private void startUdpTest() {
+
+        if (udpStarted) {
+            return;
+        }
+
+        if (udp == null || peer == null) {
+
+            out.accept(
+                    "🔴 UDP: faltan datos."
+            );
+
+            return;
+        }
+
+        udpStarted = true;
+
+        new Thread(
+                () -> {
+
+                    try {
+
+                        sent = 0;
+                        received = 0;
+                        firstPacketTime = 0;
+                        lastPacketTime = 0;
+
+                        udp.setSoTimeout(250);
+
+                        long start =
+                                System.currentTimeMillis();
+
+                        long end =
+                                start
+                                        + UDP_TEST_DURATION_MS;
+
+                        byte[] buffer =
+                                new byte[512];
+
+                        /*
+                         * Enviamos tráfico de prueba
+                         * mientras también escuchamos.
+                         */
+                        for (
+                                int i = 0;
+                                i < UDP_PACKET_COUNT;
+                                i++
+                        ) {
+
+                            if (!running) {
+                                break;
+                            }
+
+                            long timestamp =
+                                    System.nanoTime();
+
+                            byte[] payload =
+                                    ByteBuffer
+                                            .allocate(20)
+                                            .putLong(timestamp)
+                                            .putInt(i)
+                                            .putInt(
+                                                    0x50335032
+                                            )
+                                            .array();
+
+                            DatagramPacket packet =
+                                    new DatagramPacket(
+                                            payload,
+                                            payload.length,
+                                            peer
+                                    );
+
+                            udp.send(packet);
+
+                            sent++;
+
+                            receiveAvailable(
+                                    buffer
+                            );
+
+                            Thread.sleep(
+                                    UDP_INTERVAL_MS
+                            );
+                        }
+
+                        /*
+                         * Ventana adicional de recepción.
+                         */
+                        while (
+                                running
+                                        && System.currentTimeMillis()
+                                        < end
+                        ) {
+
+                            receiveAvailable(
+                                    buffer
+                            );
+                        }
+
+                        showP2PResult(
+                                System.currentTimeMillis()
+                                        - start
+                        );
+
+                    } catch (Exception e) {
+
+                        out.accept(
+                                "🔴 UDP: "
+                                        + e.getMessage()
+                        );
+
+                    } finally {
+
+                        udpStarted = false;
+                    }
+
+                },
+                "p2p-test"
+        ).start();
+    }
+
+    private void receiveAvailable(
+            byte[] buffer
+    ) {
+
+        try {
+
+            DatagramPacket packet =
+                    new DatagramPacket(
+                            buffer,
+                            buffer.length
+                    );
+
+            udp.receive(packet);
+
+            received++;
+
+            long now =
+                    System.currentTimeMillis();
+
+            if (firstPacketTime == 0) {
+                firstPacketTime = now;
+            }
+
+            lastPacketTime = now;
+
+        } catch (SocketTimeoutException ignored) {
+
+        } catch (Exception ignored) {
+
+        }
+    }
+
+    private void showP2PResult(
+            long duration
+    ) {
+
+        if (sent <= 0) {
+
+            out.accept(
+                    "⚠️ P2P: no se enviaron paquetes."
+            );
+
+            return;
+        }
+
+        double reception =
+                (received * 100.0) / sent;
+
+        out.accept(
+                "📊 P2P: enviados="
+                        + sent
+                        + " recibidos="
+                        + received
+                        + " recepción="
+                        + String.format(
+                        java.util.Locale.US,
+                        "%.1f",
+                        reception
+                )
+                        + "%"
+        );
+
+        out.accept(
+                "⏱️ Duración: "
+                        + duration
+                        + " ms"
+        );
+
+        if (received > 0) {
+
+            out.accept(
+                    "🟢 P2P DIRECTO: "
+                            + "hubo tráfico UDP bidireccional."
+            );
+
+            if (reception >= 80.0) {
+
+                out.accept(
+                        "🟢 ESTABILIDAD P2P: alta."
+                );
+
+            } else if (reception >= 30.0) {
+
+                out.accept(
+                        "🟡 ESTABILIDAD P2P: parcial."
+                );
+
+            } else {
+
+                out.accept(
+                        "🟠 ESTABILIDAD P2P: baja."
+                );
+            }
+
+        } else {
+
+            out.accept(
+                    "🔴 P2P NO CONFIRMADO."
+            );
+
+            out.accept(
+                    "STUN respondió, pero no se confirmó "
+                            + "tráfico UDP bidireccional."
+            );
+        }
+    }
+
+    /*
+     * Envía un mensaje de chat por la
+     * señalización WebSocket.
+     */
+    public void sendChat(String message) {
+
+        if (ws == null) {
+            out.accept(
+                    "⚠️ Chat: señalización no conectada."
+            );
+            return;
+        }
+
+        if (message == null ||
+                message.trim().isEmpty()) {
+            return;
+        }
+
+        try {
+
+            JSONObject x =
+                    new JSONObject();
+
+            x.put(
+                    "type",
+                    "chat"
+            );
+
+            x.put(
+                    "message",
+                    message.trim()
+            );
+
+            ws.send(
+                    x.toString()
+            );
+
+        } catch (Exception e) {
+
+            out.accept(
+                    "⚠️ Chat: "
+                            + e.getMessage()
+            );
+        }
+    }
+
+    /*
+     * Envía una señalización genérica.
+     */
+    public void sendSignal(String message) {
+
+        if (ws == null) {
+            return;
+        }
+
+        try {
+
+            JSONObject x =
+                    new JSONObject();
+
+            x.put(
+                    "type",
+                    "signal"
+            );
+
+            x.put(
+                    "message",
+                    message == null
+                            ? ""
+                            : message
+            );
+
+            ws.send(
+                    x.toString()
+            );
+
+        } catch (Exception e) {
+
+            out.accept(
+                    "⚠️ Signal: "
+                            + e.getMessage()
+            );
+        }
+    }
+
+    /*
+     * Cierra UDP + WebSocket.
+     */
+    public void close() {
+
+        running = false;
+
+        try {
+
+            if (udp != null &&
+                    !udp.isClosed()) {
+
+                udp.close();
+            }
+
+        } catch (Exception ignored) {
+        }
+
+        try {
+
+            if (ws != null) {
+                ws.close(
+                        1000,
+                        "Sesión finalizada"
+                );
+            }
+
+        } catch (Exception ignored) {
+        }
+
+        try {
+
+            if (client != null) {
+                client.dispatcher()
+                        .executorService()
+                        .shutdown();
+            }
+
+        } catch (Exception ignored) {
+        }
+
+        out.accept(
+                "⚪ Sesión P2P cerrada."
+        );
+    }
+}

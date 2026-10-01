@@ -4,7 +4,7 @@ public class UpnpTester{
  public static class Result{public String status="NO DETERMINADO",mapping="NO",renewal="NO DETERMINADO",removal="NO DETERMINADO";public long leaseSeconds=0;}
  public static Result test(Context c,long wait){Result r=new Result();int port=45000+new Random().nextInt(1000);try{
   String loc=discover();if(loc==null){r.status="NO DISPONIBLE";return r;}String xml=get(loc);String ctl=control(loc,xml);if(ctl==null)return r;
-  String args="<NewRemoteHost></NewRemoteHost><NewExternalPort>"+port+"</NewExternalPort><NewProtocol>UDP</NewProtocol><NewInternalPort>"+port+"</NewInternalPort><NewInternalClient>"+localIp()+"</NewInternalClient><NewEnabled>1</NewEnabled><NewPortMappingDescription>PS3DNSTester</NewPortMappingDescription><NewLeaseDuration>3600</NewLeaseDuration>";
+  String args="<NewRemoteHost></NewRemoteHost><NewExternalPort>"+port+"</NewExternalPort><NewProtocol>UDP</NewProtocol><NewInternalPort>"+port+"</NewInternalPort><NewInternalClient>"+localIp()+"</NewInternalClient><NewEnabled>1</NewEnabled><NewPortMappingDescription>PS3DNSTester</NewPortMappingDescription><NewLeaseDuration>0</NewLeaseDuration>";
   if(soap(ctl,"AddPortMapping",args)==null){r.status="DISPONIBLE";return r;}r.status="DISPONIBLE";r.mapping="CREADO";
   String q=soap(ctl,"GetSpecificPortMappingEntry","<NewRemoteHost></NewRemoteHost><NewExternalPort>"+port+"</NewExternalPort><NewProtocol>UDP</NewProtocol>");r.leaseSeconds=parse(q,"NewLeaseDuration");
   Thread.sleep(Math.min(wait,15000));r.renewal=soap(ctl,"AddPortMapping",args)!=null?"OK":"NO DETERMINADO";

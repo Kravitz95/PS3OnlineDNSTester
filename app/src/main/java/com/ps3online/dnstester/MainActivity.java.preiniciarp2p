@@ -2,13 +2,10 @@ package com.ps3online.dnstester;
 import android.content.Intent;
 import android.net.Uri;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.View;
 import android.view.Gravity;
-import android.graphics.Color;
-import android.graphics.drawable.GradientDrawable;
 import android.widget.*;
 import android.widget.AutoCompleteTextView;
 
@@ -16,10 +13,7 @@ import com.ps3online.dnstester.model.GameProfile;
 import com.ps3online.dnstester.data.GameLibrary;
 import com.ps3online.dnstester.model.DnsCombo;
 import com.ps3online.dnstester.dns.DnsTester;
-import com.ps3online.dnstester.p2p.P2PSession;
-import com.ps3online.dnstester.stun.StunP2P;
 import com.ps3online.dnstester.data.GameSearchService;
-import com.ps3online.dnstester.system.SystemStatusService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -49,9 +43,6 @@ private GameSearchService gameSearchService;
 private ArrayAdapter<String> gameSearchAdapter;
 private final List<String> gameSearchResults = new ArrayList<>();
 private final ExecutorService dnsExecutor = Executors.newFixedThreadPool(2);
-    private LinearLayout systemStatusContainer;
-    private TextView systemSummary;
-    private boolean systemStatusRunning = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -342,7 +333,7 @@ gameSelector.addTextChangedListener(
                                         );
                                     }
 
-                                    gameSelector.showDropDown();
+                                    gameSelector.show();
                                 });
                             }
 
@@ -381,6 +372,7 @@ gameSelector.addTextChangedListener(
         }
 );
 
+        gameSelector.setAdapter(gameAdapter);
 gameSearchAdapter =
         new ArrayAdapter<>(
                 this,
@@ -748,7 +740,12 @@ root.addView(dnsInstruction);
                 return;
             }
 
-            ejecutarModoSolo();
+            status.setText(
+                    "🟢 MODO SOLO\n\n" +
+                    "Diagnóstico individual:\n" +
+                    "DNS • Internet • STUN\n\n" +
+                    "ℹ️ No se abrirá WebSocket ni sala P2P."
+            );
         });
 
         createRoomButton.setOnClickListener(v -> {
@@ -849,142 +846,9 @@ root.addView(dnsInstruction);
         labButton.setText("🎮 ABRIR LABORATORIO PS3");
         labButton.setAllCaps(false);
         root.addView(labButton);
-        // ============================================================
-        // 5. 🛠️ ESTADO DEL SISTEMA
-        // ============================================================
 
-        TextView systemTitle = new TextView(this);
-        systemTitle.setText("5. 🛠️ ESTADO DEL SISTEMA");
-        systemTitle.setTextSize(18);
-        systemTitle.setGravity(Gravity.CENTER);
-        systemTitle.setPadding(0, 32, 0, 10);
-        root.addView(systemTitle);
-
-        systemStatusContainer = new LinearLayout(this);
-        systemStatusContainer.setOrientation(LinearLayout.VERTICAL);
-        systemStatusContainer.setPadding(20, 12, 20, 12);
-
-        GradientDrawable systemBackground = new GradientDrawable();
-        systemBackground.setColor(Color.rgb(245, 245, 245));
-        systemBackground.setCornerRadius(24);
-        systemBackground.setStroke(2, Color.GRAY);
-        systemStatusContainer.setBackground(systemBackground);
-
-        systemSummary = new TextView(this);
-        systemSummary.setText(
-                "⚪ Estado aún no comprobado\n\n" +
-                "Pulsa el botón para comprobar Internet, DNS,\n" +
-                "PSN y los servicios de conectividad disponibles."
-        );
-        systemSummary.setTextSize(14);
-        systemSummary.setGravity(Gravity.CENTER);
-        systemSummary.setPadding(16, 16, 16, 16);
-
-        systemStatusContainer.addView(systemSummary);
-        root.addView(systemStatusContainer);
-
-        Button systemCheckButton = new Button(this);
-        systemCheckButton.setText("🔍 COMPROBAR ESTADO DEL SISTEMA");
-        systemCheckButton.setAllCaps(false);
-        root.addView(systemCheckButton);
-
-        systemCheckButton.setOnClickListener(v -> {
-            if (systemStatusRunning) {
-                return;
-            }
-
-            systemStatusRunning = true;
-            systemCheckButton.setEnabled(false);
-
-            systemSummary.setText(
-                    "🟡 COMPROBANDO...\n\n" +
-                    "🌐 Internet\n" +
-                    "🔎 DNS\n" +
-                    "🎮 PSN\n" +
-                    "🔌 Conectividad"
-            );
-
-            SystemStatusService service = new SystemStatusService();
-
-            service.checkAll(this, items -> {
-                runOnUiThread(() -> {
-
-                    StringBuilder result = new StringBuilder();
-
-                    int ok = 0;
-                    int degraded = 0;
-                    int error = 0;
-                    int unknown = 0;
-
-                    for (SystemStatusService.Item item : items) {
-
-                        String icon;
-
-                        switch (item.state) {
-                            case OK:
-                                icon = "🟢";
-                                ok++;
-                                break;
-
-                            case DEGRADED:
-                                icon = "🟡";
-                                degraded++;
-                                break;
-
-                            case ERROR:
-                                icon = "🔴";
-                                error++;
-                                break;
-
-                            default:
-                                icon = "⚪";
-                                unknown++;
-                                break;
-                        }
-
-                        result.append(icon)
-                                .append(" ")
-                                .append(item.name)
-                                .append("\n")
-                                .append(item.description)
-                                .append(" • ")
-                                .append(item.detail)
-                                .append("\n\n");
-                    }
-
-                    result.append("━━━━━━━━━━━━━━━━━━━━\n")
-                            .append("📊 RESUMEN\n")
-                            .append("🟢 Correctos: ").append(ok).append("\n")
-                            .append("🟡 Degradados: ").append(degraded).append("\n")
-                            .append("🔴 Errores: ").append(error).append("\n");
-
-                    if (unknown > 0) {
-                        result.append("⚪ Desconocidos: ")
-                                .append(unknown)
-                                .append("\n");
-                    }
-
-                    systemSummary.setText(result.toString());
-
-                    systemStatusRunning = false;
-                    systemCheckButton.setEnabled(true);
-                });
-            });
-
-        });
-
-        TextView systemInfo = new TextView(this);
-        systemInfo.setText(
-                "ℹ️ Este diagnóstico comprueba el estado general de " +
-                "la conexión. Los resultados pueden variar según la " +
-                "red, el proveedor y los servicios externos."
-        );
-        systemInfo.setTextSize(12);
-        systemInfo.setGravity(Gravity.CENTER);
-        systemInfo.setPadding(20, 8, 20, 12);
-        root.addView(systemInfo);
         TextView communityTitle = new TextView(this);
-        communityTitle.setText("6. 👥 COMUNIDADES");
+        communityTitle.setText("5. 👥 COMUNIDADES");
         communityTitle.setTextSize(18);
         communityTitle.setGravity(Gravity.CENTER);
         communityTitle.setPadding(0, 32, 0, 10);
@@ -1013,7 +877,7 @@ root.addView(dnsInstruction);
         root.addView(communityButton);
 
         TextView faqTitle = new TextView(this);
-        faqTitle.setText("7. ❓ FAQ");
+        faqTitle.setText("6. ❓ FAQ");
         faqTitle.setTextSize(18);
         faqTitle.setGravity(Gravity.CENTER);
         faqTitle.setPadding(0, 32, 0, 10);
@@ -1033,7 +897,7 @@ root.addView(dnsInstruction);
         root.addView(faqInfo);
 
         TextView supportTitle = new TextView(this);
-        supportTitle.setText("8. ☕ APOYAR EL PROYECTO");
+        supportTitle.setText("7. ☕ APOYAR EL PROYECTO");
         supportTitle.setTextSize(18);
         supportTitle.setGravity(Gravity.CENTER);
         supportTitle.setPadding(0, 36, 0, 10);
@@ -1055,7 +919,7 @@ root.addView(dnsInstruction);
         root.addView(supportButton);
 
         TextView infoTitle = new TextView(this);
-        infoTitle.setText("9. ℹ️ INFORMACIÓN");
+        infoTitle.setText("8. ℹ️ INFORMACIÓN");
         infoTitle.setTextSize(18);
         infoTitle.setGravity(Gravity.CENTER);
         infoTitle.setPadding(0, 32, 0, 10);
@@ -1311,327 +1175,6 @@ gameSelector.setOnItemClickListener(
         }
 );
     setContentView(scroll);
-    }
-
-    private void ejecutarModoSolo() {
-
-        final String primary = dnsSelector == null
-                ? ""
-                : dnsSelector.getText().toString().trim();
-
-        final String secondary = customDns == null
-                ? ""
-                : customDns.getText().toString().trim();
-
-        if (primary.isEmpty() && secondary.isEmpty()) {
-            status.setText(
-                    "⚠️ MODO SOLO\n\n" +
-                    "Introduce al menos una DNS para realizar la prueba."
-            );
-            return;
-        }
-
-        p2pRunning = true;
-
-        status.setText(
-                "🟢 MODO SOLO\n\n" +
-                "🔎 Iniciando diagnóstico...\n" +
-                "🌐 DNS\n" +
-                "📡 STUN\n" +
-                "⏱️ Latencia\n\n" +
-                "ℹ️ No se abrirá WebSocket ni sala P2P."
-        );
-
-        dnsExecutor.execute(() -> {
-
-            DnsTester.Result primaryResult = null;
-            DnsTester.Result secondaryResult = null;
-            StunP2P.Result stunResult = null;
-
-            StringBuilder result = new StringBuilder();
-
-            try {
-
-                if (!primary.isEmpty()) {
-
-                    DnsTester.Result finalPrimary =
-                            DnsTester.queryA(
-                                    primary,
-                                    "example.com",
-                                    DnsTester.DEFAULT_TIMEOUT_MS
-                            );
-
-                    primaryResult = finalPrimary;
-                }
-
-                if (!secondary.isEmpty()) {
-
-                    DnsTester.Result finalSecondary =
-                            DnsTester.queryA(
-                                    secondary,
-                                    "example.com",
-                                    DnsTester.DEFAULT_TIMEOUT_MS
-                            );
-
-                    secondaryResult = finalSecondary;
-                }
-
-                try {
-
-                    stunResult =
-                            StunP2P.discover(
-                                    "stun.cloudflare.com",
-                                    3478,
-                                    6000
-                            );
-
-                } catch (Exception e) {
-
-                    stunResult =
-                            new StunP2P.Result(
-                                    false,
-                                    "STUN: " +
-                                            (
-                                                    e.getMessage() == null
-                                                            ? e.getClass().getSimpleName()
-                                                            : e.getMessage()
-                                            ),
-                                    null,
-                                    null
-                            );
-                }
-
-                result.append("🟢 MODO SOLO — RESULTADO\n\n");
-
-                result.append("🌐 DNS PRIMARIA\n");
-
-                if (primaryResult != null) {
-                    result.append(
-                            primaryResult.ok
-                                    ? "🟢 RESPONDE"
-                                    : "🔴 NO CONFIRMADA"
-                    );
-
-                    result.append(
-                            " • "
-                                    + primaryResult.rttMs
-                                    + " ms\n"
-                    );
-
-                    result.append(
-                            "   "
-                                    + primaryResult.message
-                                    + "\n"
-                    );
-
-                } else {
-                    result.append("⚪ NO CONFIGURADA\n");
-                }
-
-                result.append("\n🌐 DNS SECUNDARIA\n");
-
-                if (secondaryResult != null) {
-                    result.append(
-                            secondaryResult.ok
-                                    ? "🟢 RESPONDE"
-                                    : "🔴 NO CONFIRMADA"
-                    );
-
-                    result.append(
-                            " • "
-                                    + secondaryResult.rttMs
-                                    + " ms\n"
-                    );
-
-                    result.append(
-                            "   "
-                                    + secondaryResult.message
-                                    + "\n"
-                    );
-
-                } else {
-                    result.append("⚪ NO CONFIGURADA\n");
-                }
-
-                result.append("\n📡 STUN\n");
-
-                if (
-                        stunResult != null
-                                && stunResult.ok
-                                && stunResult.mapped != null
-                ) {
-
-                    result.append("🟢 RESPONDE\n");
-                    result.append(
-                            "🌐 Endpoint observado: "
-                                    + stunResult.mapped.getAddress()
-                                            .getHostAddress()
-                                    + ":"
-                                    + stunResult.mapped.getPort()
-                                    + "\n"
-                    );
-
-                    result.append(
-                            "ℹ️ Esto confirma que STUN observó un endpoint público.\n"
-                    );
-
-                } else {
-
-                    result.append(
-                            "🟡 NO SE PUDO CONFIRMAR\n"
-                    );
-
-                    if (
-                            stunResult != null
-                                    && stunResult.message != null
-                    ) {
-                        result.append(
-                                "   "
-                                        + stunResult.message
-                                        + "\n"
-                        );
-                    }
-                }
-
-                result.append("\n📋 INTERPRETACIÓN\n");
-
-                boolean dnsOk =
-                        (primaryResult != null && primaryResult.ok)
-                                || (secondaryResult != null && secondaryResult.ok);
-
-                if (dnsOk) {
-                    result.append(
-                            "🟢 DNS: al menos un resolver respondió correctamente.\n"
-                    );
-                } else {
-                    result.append(
-                            "🔴 DNS: no se confirmó una respuesta válida.\n"
-                    );
-                }
-
-                if (stunResult != null && stunResult.ok) {
-                    result.append(
-                            "🟢 STUN: endpoint público observado.\n"
-                    );
-                } else {
-                    result.append(
-                            "🟡 STUN: no se pudo confirmar.\n"
-                    );
-                }
-
-                result.append(
-                        "\n⚠️ Este diagnóstico no determina por sí solo " +
-                        "si un juego PS3 podrá establecer una conexión P2P."
-                );
-
-            } finally {
-
-                if (
-                        stunResult != null
-                                && stunResult.socket != null
-                ) {
-                    try {
-                        stunResult.socket.close();
-                    } catch (Exception ignored) {
-                    }
-                }
-            }
-
-            final String finalResult = result.toString();
-
-            runOnUiThread(() -> {
-                status.setText(finalResult);
-                p2pRunning = false;
-            });
-        });
-    }
-
-    private void iniciarP2P(boolean host, String room) {
-
-        if (p2pRunning) {
-            status.setText("⚠️ Ya existe una prueba P2P en ejecución.");
-            return;
-        }
-
-        String dns = "";
-        if (dnsSelector != null) {
-            dns = dnsSelector.getText()
-                    .toString()
-                    .trim();
-        }
-
-        String game = "";
-        if (gameSelector != null) {
-            game = gameSelector.getText()
-                    .toString()
-                    .trim();
-        }
-
-        if (game.isEmpty()) {
-            game = "PS3 / PSN general";
-        }
-
-        p2pRunning = true;
-        p2pRoomCode = room == null
-                ? ""
-                : room.trim().toUpperCase(java.util.Locale.US);
-
-        String roleInfo = host
-                ? "🟠 ANFITRIÓN"
-                : "🔵 INVITADO";
-
-        status.setText(
-                "🧪 INICIANDO PRUEBA P2P\n\n" +
-                roleInfo + "\n" +
-                "🎮 Juego: " + game + "\n" +
-                "🌐 DNS: " + (dns.isEmpty() ? "automática" : dns) + "\n\n" +
-                "🔎 Preparando STUN..."
-        );
-
-        final String finalDns = dns;
-        final String finalGame = game;
-        final boolean finalHost = host;
-        final String finalRoom = p2pRoomCode;
-
-        p2pSession = new P2PSession(
-                finalHost,
-                finalRoom,
-                finalDns,
-                "Juego: " + finalGame,
-                this,
-                message -> runOnUiThread(() -> {
-
-                    if (message == null) {
-                        return;
-                    }
-
-                    String text = message.trim();
-
-                    if (text.startsWith("🏠 SALA:")) {
-                        String detectedRoom = text
-                                .substring("🏠 SALA:".length())
-                                .trim();
-
-                        if (!detectedRoom.isEmpty()) {
-                            p2pRoomCode = detectedRoom;
-                        }
-                    }
-
-                    status.setText(text);
-
-                    if (
-                            text.contains("🔴 WEBSOCKET") ||
-                            text.contains("🔴 SEÑAL:") ||
-                            text.contains("🔴 P2P") ||
-                            text.contains("🔴 STUN") ||
-                            text.contains("⚠️ STUN")
-                    ) {
-                        p2pRunning = false;
-                    }
-                })
-        );
-
-        p2pSession.start();
     }
 
     private void testDnsSimultaneously() {

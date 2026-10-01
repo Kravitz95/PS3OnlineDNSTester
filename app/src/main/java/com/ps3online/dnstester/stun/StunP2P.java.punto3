@@ -1,7 +1,7 @@
 package com.ps3online.dnstester.stun;
 import java.net.*;import java.util.*;
 public class StunP2P{
- public static class Result{public boolean ok;public String message;public InetSocketAddress mapped;public DatagramSocket socket;public Result(boolean o,String m,InetSocketAddress x,DatagramSocket s){ok=o;message=m;mapped=x;socket=s;}}
+ public static class Result{public boolean ok;public String message;public InetSocketAddress mapped;public DatagramSocket socket;Result(boolean o,String m,InetSocketAddress x,DatagramSocket s){ok=o;message=m;mapped=x;socket=s;}}
  public static Result discover(String host,int port,int timeout)throws Exception{
   DatagramSocket s=new DatagramSocket();s.setSoTimeout(timeout);byte[] req=new byte[20];req[1]=1;req[4]=0x21;req[5]=0x12;req[6]=(byte)0xA4;req[7]=0x42;byte[] tid=new byte[12];new Random().nextBytes(tid);System.arraycopy(tid,0,req,8,12);
   s.send(new DatagramPacket(req,20,InetAddress.getByName(host),port));byte[] b=new byte[2048];DatagramPacket p=new DatagramPacket(b,b.length);s.receive(p);
