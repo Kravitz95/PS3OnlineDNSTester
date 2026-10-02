@@ -112,7 +112,7 @@ private volatile long ackBytesIn = 0;
 // ⏱️ RTT medido mediante ACK
 private volatile long rttSamples = 0;
 private volatile long rttTotalMs = 0;
-
+    
 private final Map<Integer, Long> pendingPackets =
         new ConcurrentHashMap<>();
 
@@ -874,19 +874,10 @@ private Thread udpThread;
                  * abierta la traducción NAT.
                  */
 
-                int dataSequence = sequence++;
-
                 byte[] packet =
                         createDataPacket(
-                                dataSequence
+                                sequence++
                         );
-
-                /*
-                 * Registrar el instante local ANTES de enviar DATA.
-                 * El ACK utilizará este mismo sequence para calcular RTT.
-                 */
-                long sendNano = System.nanoTime();
-                pendingPackets.put(dataSequence, sendNano);
 
                 DatagramPacket outgoing =
                         new DatagramPacket(
@@ -992,11 +983,6 @@ private Thread udpThread;
 
         } finally {
 
-            /*
-             * Los DATA sin ACK ya no pueden producir RTT
-             * después de finalizar esta prueba.
-             */
-            pendingPackets.clear();
             p2pRunning = false;
         }
     }
@@ -1116,7 +1102,8 @@ private Thread udpThread;
                 ackOut++;
                 ackBytesOut += ack.length;
 
-
+                sentPackets++;
+                sentBytes += ack.length;
 
                 return;
             }
@@ -1147,7 +1134,8 @@ private Thread udpThread;
                 ackIn++;
                 ackBytesIn += packet.getLength();
 
-
+                receivedPackets++;
+                receivedBytes += packet.getLength();
 
                 /*
                  * RTT correcto:
@@ -1213,67 +1201,112 @@ private Thread udpThread;
      * Genera el resultado final del experimento UDP.
      */
     private void emitUdpResult() {
-        long packetsOut = sentPackets;
-        long packetsIn = receivedPackets;
-        long acknowledgementsIn = ackIn;
+
+        long packetsOut =
+                sentPackets;
+
+        long packetsIn =
+                receivedPackets;
 
         double loss = 0.0;
 
-        if (packetsOut > 0) {
-            loss = 100.0 * (1.0
-                    - ((double) acknowledgementsIn / (double) packetsOut));
-
-            if (loss < 0.0) loss = 0.0;
-            if (loss > 100.0) loss = 100.0;
-        }
-
-        emit("📊 P2P UDP — RESUMEN DEL EXPERIMENTO");
-        emit("📤 DATA enviados: " + packetsOut);
-        emit("📥 DATA recibidos: " + packetsIn);
-        emit("✅ ACK recibidos: " + acknowledgementsIn);
+        /*
+         * Como ambos lados generan tráfico,
+         * no usamos simplemente received/sent
+         * como una verdad absoluta de pérdida.
+         *
+         * Lo presentamos como una observación
+         * del experimento.
+         */
 
         if (packetsOut > 0) {
-            emit(String.format(
-                    Locale.US,
-                    "📉 PÉRDIDA OBSERVADA DE DATA SALIENTE: %.1f%%",
-                    loss
-            ));
-        } else {
-            emit("📉 PÉRDIDA OBSERVADA: no calculable — no se enviaron DATA");
+
+            loss =
+                    100.0
+                            * (
+                            1.0
+                                    - (
+                                    (double) packetsIn
+                                            / (double) packetsOut
+                            )
+                    );
+
+            if (loss < 0) {
+                loss = 0;
+            }
+
+            if (loss > 100) {
+                loss = 100;
+            }
         }
+
+        double averageRtt = 0.0;
 
         if (rttSamples > 0) {
-            double averageRtt = rttTotalMs / (double) rttSamples;
 
-            emit(String.format(
-                    Locale.US,
-                    "⏱️ RTT PROMEDIO: %.1f ms (%d muestras)",
-                    averageRtt,
-                    rttSamples
-            ));
-        } else {
-            emit("⏱️ RTT: no determinado — no hubo ACK válidos");
+            averageRtt =
+                    (double) rttTotalMs
+                            / (double) rttSamples;
         }
 
-        if (packetsOut > 0
-                && packetsIn > 0
-                && acknowledgementsIn > 0
-                && rttSamples > 0) {
+        emit(
+                "📊 P2P UDP: enviados="
+                        + packetsOut
+                        + " recibidos="
+                        + packetsIn
+        );
+
+        emit(
+                String.format(
+                        Locale.US,
+                        "📉 PÉRDIDA OBSERVADA: %.1f%%",
+                        loss
+                )
+        );
+
+        if (rttSamples > 0) {
+
+            emit(
+                    String.format(
+                            Locale.US,
+                            "⏱️ LATENCIA OBSERVADA: %.0f ms",
+                            averageRtt
+                    )
+            );
+
+        } else {
+
+            emit(
+                    "⏱️ LATENCIA: NO DETERMINADA"
+            );
+        }
+
+        /*
+         * Interpretación conservadora.
+         */
+
+        if (
+                packetsIn > 0
+                        && rttSamples > 0
+        ) {
 
             if (loss <= 5.0) {
+
                 emit(
                         "🟢 RESULTADO P2P: CONECTIVIDAD BIDIRECCIONAL CONFIRMADA"
                 );
+
             } else {
+
                 emit(
                         "🟡 RESULTADO P2P: CONECTIVIDAD BIDIRECCIONAL CON PÉRDIDA"
                 );
             }
 
-        } else if (packetsIn > 0 || acknowledgementsIn > 0) {
+        } else if (packetsIn > 0) {
 
             emit(
-                    "🟡 RESULTADO P2P: TRÁFICO UDP DETECTADO, MÉTRICAS INCOMPLETAS"
+                    "🟡 RESULTADO P2P: TRÁFICO RECIBIDO, LATENCIA NO DETERMINADA"
             );
 
         } else {

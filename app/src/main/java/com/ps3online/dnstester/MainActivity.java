@@ -119,6 +119,43 @@ private final ExecutorService dnsExecutor = Executors.newFixedThreadPool(2);
     }
 
 
+    /**
+     * Abre la comunidad seleccionada usando la URL registrada.
+     */
+    private void openCommunity(
+            CommunityRegistry.CommunityInfo community
+    ) {
+        if (community == null
+                || community.url == null
+                || community.url.trim().isEmpty()) {
+
+            Toast.makeText(
+                    this,
+                    "⚠️ Esta comunidad no tiene un enlace configurado.",
+                    Toast.LENGTH_SHORT
+            ).show();
+            return;
+        }
+
+        try {
+            Intent intent = new Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse(community.url)
+            );
+
+            startActivity(intent);
+
+        } catch (Exception e) {
+
+            Toast.makeText(
+                    this,
+                    "⚠️ No se pudo abrir la comunidad.",
+                    Toast.LENGTH_SHORT
+            ).show();
+        }
+    }
+
+    /**
      * Determina todas las comunidades aplicables al juego y DNS actual.
      * Se eliminan duplicados por ID.
      */
