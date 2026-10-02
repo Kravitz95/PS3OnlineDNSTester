@@ -900,6 +900,8 @@ private Thread udpThread;
 
                 sentPackets++;
                 sentBytes += packet.length;
+                dataOut++;
+                dataBytesOut += packet.length;
 
                 /*
                  * Escuchar respuestas.
@@ -1213,26 +1215,31 @@ private Thread udpThread;
      * Genera el resultado final del experimento UDP.
      */
     private void emitUdpResult() {
-        long packetsOut = sentPackets;
-        long packetsIn = receivedPackets;
-        long acknowledgementsIn = ackIn;
+        long dataSent = dataOut;
+        long dataReceived = dataIn;
+        long acknowledgementsSent = ackOut;
+        long acknowledgementsReceived = ackIn;
 
         double loss = 0.0;
 
-        if (packetsOut > 0) {
-            loss = 100.0 * (1.0
-                    - ((double) acknowledgementsIn / (double) packetsOut));
+        if (dataSent > 0) {
+            loss = 100.0 * (
+                    1.0
+                            - ((double) acknowledgementsReceived
+                            / (double) dataSent)
+            );
 
             if (loss < 0.0) loss = 0.0;
             if (loss > 100.0) loss = 100.0;
         }
 
         emit("📊 P2P UDP — RESUMEN DEL EXPERIMENTO");
-        emit("📤 DATA enviados: " + packetsOut);
-        emit("📥 DATA recibidos: " + packetsIn);
-        emit("✅ ACK recibidos: " + acknowledgementsIn);
+        emit("📤 DATA enviados: " + dataSent);
+        emit("📥 DATA recibidos: " + dataReceived);
+        emit("➡️ ACK enviados: " + acknowledgementsSent);
+        emit("⬅️ ACK recibidos: " + acknowledgementsReceived);
 
-        if (packetsOut > 0) {
+        if (dataSent > 0) {
             emit(String.format(
                     Locale.US,
                     "📉 PÉRDIDA OBSERVADA DE DATA SALIENTE: %.1f%%",
@@ -1243,7 +1250,8 @@ private Thread udpThread;
         }
 
         if (rttSamples > 0) {
-            double averageRtt = rttTotalMs / (double) rttSamples;
+            double averageRtt =
+                    rttTotalMs / (double) rttSamples;
 
             emit(String.format(
                     Locale.US,
@@ -1255,33 +1263,71 @@ private Thread udpThread;
             emit("⏱️ RTT: no determinado — no hubo ACK válidos");
         }
 
-        if (packetsOut > 0
-                && packetsIn > 0
-                && acknowledgementsIn > 0
-                && rttSamples > 0) {
+        boolean bidirectionalData =
+                dataSent > 0
+                        && dataReceived > 0;
 
+        boolean bidirectionalAck =
+                acknowledgementsSent > 0
+                        && acknowledgementsReceived > 0;
+
+        boolean bidirectionalConfirmed =
+                bidirectionalData
+                        && bidirectionalAck;
+
+        if (bidirectionalConfirmed) {
             if (loss <= 5.0) {
                 emit(
-                        "🟢 RESULTADO P2P: CONECTIVIDAD BIDIRECCIONAL CONFIRMADA"
+                        "🟢 RESULTADO P2P: "
+                                + "CONECTIVIDAD BIDIRECCIONAL CONFIRMADA"
                 );
             } else {
                 emit(
-                        "🟡 RESULTADO P2P: CONECTIVIDAD BIDIRECCIONAL CON PÉRDIDA"
+                        "🟡 RESULTADO P2P: "
+                                + "CONECTIVIDAD BIDIRECCIONAL CON PÉRDIDA"
                 );
             }
 
-        } else if (packetsIn > 0 || acknowledgementsIn > 0) {
-
-            emit(
-                    "🟡 RESULTADO P2P: TRÁFICO UDP DETECTADO, MÉTRICAS INCOMPLETAS"
-            );
-
-        } else {
-
-            emit(
-                    "⚠️ RESULTADO P2P: NO DETERMINADO — no se recibió tráfico UDP"
-            );
+            return;
         }
+
+        boolean anyDataTraffic =
+                dataSent > 0
+                        || dataReceived > 0;
+
+        boolean anyAckTraffic =
+                acknowledgementsSent > 0
+                        || acknowledgementsReceived > 0;
+
+        if (anyDataTraffic || anyAckTraffic) {
+            if (dataReceived > 0 && dataSent == 0) {
+                emit(
+                        "🟡 RESULTADO P2P: "
+                                + "TRÁFICO UDP RECIBIDO, "
+                                + "PERO SIN DATA SALIENTE CONFIRMADO"
+                );
+            } else if (dataSent > 0 && dataReceived == 0) {
+                emit(
+                        "🟡 RESULTADO P2P: "
+                                + "DATA SALIENTE SIN TRÁFICO "
+                                + "UDP ENTRANTE CONFIRMADO"
+                );
+            } else {
+                emit(
+                        "🟡 RESULTADO P2P: "
+                                + "TRÁFICO UDP DETECTADO, "
+                                + "MÉTRICAS DIRECCIONALES INCOMPLETAS"
+                );
+            }
+
+            return;
+        }
+
+        emit(
+                "⚠️ RESULTADO P2P: "
+                        + "NO DETERMINADO — "
+                        + "no se recibió tráfico UDP"
+        );
     }
 
     /**
