@@ -1,7 +1,5 @@
 package com.ps3online.dnstester.system;
 
-import com.ps3online.dnstester.upnp.UpnpTester;
-
 import android.content.Context;
 
 import com.ps3online.dnstester.stun.StunP2P;
@@ -92,7 +90,7 @@ public class SystemStatusService {
             items.add(checkSignalingHttp());
             items.add(checkWebSocket());
             items.add(checkStun());
-            items.add(checkUpnp(context));
+            items.add(checkUpnp());
 
             callback.onComplete(items);
 
@@ -426,65 +424,86 @@ public class SystemStatusService {
         }
     }
 
-    private Item checkUpnp(Context context) {
+    private Item checkUpnp() {
+
+        DatagramSocket socket = null;
+
         try {
-            UpnpTester.Result result = UpnpTester.test(context, 15000);
 
-            if (result == null) {
-                return new Item(
-                        "🏠 UPnP / IGD",
-                        "Router",
-                        State.UNKNOWN,
-                        "No se pudo obtener un resultado"
-                );
-            }
+            socket = new DatagramSocket();
+            socket.setSoTimeout(3000);
 
-            if (result.mappingVerified) {
+            String message =
+                    "M-SEARCH * HTTP/1.1\r\n" +
+                    "HOST: 239.255.255.250:1900\r\n" +
+                    "MAN: \"ssdp:discover\"\r\n" +
+                    "MX: 1\r\n" +
+                    "ST: urn:schemas-upnp-org:device:InternetGatewayDevice:1\r\n" +
+                    "\r\n";
+
+            byte[] data =
+                    message.getBytes(StandardCharsets.UTF_8);
+
+            DatagramPacket request =
+                    new DatagramPacket(
+                            data,
+                            data.length,
+                            InetAddress.getByName(
+                                    "239.255.255.250"
+                            ),
+                            1900
+                    );
+
+            socket.send(request);
+
+            byte[] buffer = new byte[4096];
+
+            DatagramPacket response =
+                    new DatagramPacket(
+                            buffer,
+                            buffer.length
+                    );
+
+            socket.receive(response);
+
+            String text =
+                    new String(
+                            response.getData(),
+                            0,
+                            response.getLength(),
+                            StandardCharsets.UTF_8
+                    );
+
+            socket.close();
+
+            if (text.toLowerCase().contains("location:")) {
+
                 return new Item(
                         "🏠 UPnP / IGD",
                         "Router",
                         State.OK,
-                        "Mapeo de puerto UPnP verificado"
-                );
-            }
-
-            if (result.routerRejected) {
-                return new Item(
-                        "🏠 UPnP / IGD",
-                        "Router",
-                        State.ERROR,
-                        result.error != null
-                                ? "Router rechazó el mapeo: " + result.error
-                                : "Router rechazó el mapeo"
-                );
-            }
-
-            if (result.indeterminate) {
-                return new Item(
-                        "🏠 UPnP / IGD",
-                        "Router",
-                        State.UNKNOWN,
-                        result.error != null
-                                ? result.error
-                                : "No se pudo verificar el mapeo"
+                        "Gateway UPnP detectado"
                 );
             }
 
             return new Item(
                     "🏠 UPnP / IGD",
                     "Router",
-                    State.UNKNOWN,
-                    result.status != null
-                            ? result.status
-                            : "No se pudo confirmar el mapeo"
+                    State.DEGRADED,
+                    "Respuesta sin ubicación"
             );
 
         } catch (Exception e) {
+
+            if (socket != null) {
+                socket.close();
+            }
+
             return new Item(
                     "🏠 UPnP / IGD",
                     "Router",
                     State.UNKNOWN,
-                    "No se pudo confirmar: " + e.getMessage()
+                    "No se pudo confirmar"
             );
         }
     }

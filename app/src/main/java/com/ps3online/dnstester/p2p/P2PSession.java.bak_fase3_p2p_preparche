@@ -13,9 +13,6 @@ import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -112,17 +109,7 @@ private volatile long ackBytesIn = 0;
 // ⏱️ RTT medido mediante ACK
 private volatile long rttSamples = 0;
 private volatile long rttTotalMs = 0;
-    
-private final Map<Integer, Long> pendingPackets =
-        new ConcurrentHashMap<>();
-
-private final Set<Integer> receivedDataSequences =
-        ConcurrentHashMap.newKeySet();
-
-private final Set<Integer> acknowledgedSequences =
-        ConcurrentHashMap.newKeySet();
-
-private Thread udpThread;
+    private Thread udpThread;
 
     public P2PSession(
             String u,
@@ -811,10 +798,6 @@ private Thread udpThread;
         rttSamples = 0;
         rttTotalMs = 0;
 
-        pendingPackets.clear();
-        receivedDataSequences.clear();
-        acknowledgedSequences.clear();
-
         emit(
                 "🕳️ UDP P2P: iniciando hole punching..."
         );
@@ -1026,22 +1009,10 @@ private Thread udpThread;
     private void processUdpPacket(
             DatagramPacket packet
     ) {
-        try {
-            if (packet == null ||
-                    packet.getLength() < 20 ||
-                    udp == null ||
-                    peer == null) {
-                return;
-            }
 
-            /*
-             * Solo aceptar paquetes procedentes del endpoint
-             * del peer conocido.
-             */
-            if (packet.getAddress() == null ||
-                    peer.getAddress() == null ||
-                    !packet.getAddress().equals(peer.getAddress()) ||
-                    packet.getPort() != peer.getPort()) {
+        try {
+
+            if (packet.getLength() < 20) {
                 return;
             }
 
@@ -1052,37 +1023,57 @@ private Thread udpThread;
                             packet.getLength()
                     );
 
-            int magic = buffer.getInt();
+            int magic =
+                    buffer.getInt();
 
             if (magic != MAGIC) {
                 return;
             }
 
-            int type = buffer.getInt();
-            int sequence = buffer.getInt();
-            long timestamp = buffer.getLong();
+            int type =
+                    buffer.getInt();
+
+            int sequence =
+                    buffer.getInt();
+
+            long timestamp =
+                    buffer.getLong();
+
+            receivedPackets++;
+            receivedBytes += packet.getLength();
 
             /*
-             * TYPE 1 = DATA recibido del peer.
+             * DATA recibido.
              */
             if (type == 1) {
 
-                /*
-                 * Evitar contar dos veces el mismo DATA.
-                 */
-                if (!receivedDataSequences.add(sequence)) {
-                    return;
+                long elapsedNanos =
+                        System.nanoTime()
+                                - timestamp;
+
+                if (elapsedNanos > 0) {
+
+                    long rtt =
+                            TimeUnit.NANOSECONDS
+                                    .toMillis(
+                                            elapsedNanos
+                                    );
+
+                    if (rtt >= 0
+                            && rtt < 10000) {
+
+                        rttSamples++;
+                        rttTotalMs += rtt;
+                    }
                 }
 
-                dataIn++;
-                dataBytesIn += packet.getLength();
-
-                receivedPackets++;
-                receivedBytes += packet.getLength();
-
                 /*
-                 * Responder con ACK al mismo endpoint.
+                 * Responder al origen.
+                 *
+                 * Esto permite comprobar tráfico
+                 * realmente bidireccional.
                  */
+
                 byte[] ack =
                         createAckPacket(
                                 sequence,
@@ -1099,9 +1090,6 @@ private Thread udpThread;
 
                 udp.send(response);
 
-                ackOut++;
-                ackBytesOut += ack.length;
-
                 sentPackets++;
                 sentBytes += ack.length;
 
@@ -1109,53 +1097,27 @@ private Thread udpThread;
             }
 
             /*
-             * TYPE 2 = ACK de un DATA enviado por este teléfono.
+             * ACK recibido.
              */
             if (type == 2) {
 
-                /*
-                 * El ACK debe corresponder a un DATA
-                 * pendiente enviado localmente.
-                 */
-                Long sendNano =
-                        pendingPackets.remove(sequence);
-
-                if (sendNano == null) {
-                    return;
-                }
-
-                /*
-                 * Evitar contabilizar dos veces el mismo ACK.
-                 */
-                if (!acknowledgedSequences.add(sequence)) {
-                    return;
-                }
-
-                ackIn++;
-                ackBytesIn += packet.getLength();
-
-                receivedPackets++;
-                receivedBytes += packet.getLength();
-
-                /*
-                 * RTT correcto:
-                 * envío local -> recepción local del ACK.
-                 *
-                 * No se utiliza el timestamp del otro teléfono
-                 * porque System.nanoTime() no es comparable entre
-                 * dispositivos.
-                 */
                 long elapsedNanos =
-                        System.nanoTime() - sendNano;
+                        System.nanoTime()
+                                - timestamp;
 
-                if (elapsedNanos >= 0) {
+                if (elapsedNanos > 0) {
 
                     long rtt =
-                            TimeUnit.NANOSECONDS.toMillis(
-                                    elapsedNanos
-                            );
+                            TimeUnit.NANOSECONDS
+                                    .toMillis(
+                                            elapsedNanos
+                                    );
 
-                    if (rtt >= 0 && rtt < 10000) {
+                    if (
+                            rtt >= 0
+                                    && rtt < 10000
+                    ) {
+
                         rttSamples++;
                         rttTotalMs += rtt;
                     }
@@ -1163,6 +1125,7 @@ private Thread udpThread;
             }
 
         } catch (Exception e) {
+
             emit(
                     "⚠️ UDP paquete inválido: "
                             + safeMessage(e)

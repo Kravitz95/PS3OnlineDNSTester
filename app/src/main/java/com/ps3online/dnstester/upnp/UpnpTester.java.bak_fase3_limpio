@@ -141,15 +141,8 @@ public class UpnpTester {
 
             /*
              * 4. Obtener IPv4 local.
-             */            String localIp;
-            try {
-                localIp = localIp();
-            } catch (Exception e) {
-                result.status = "UPnP DETECTADO · IP LOCAL NO DETERMINADA";
-                result.error = "No se pudo determinar la IPv4 local: " + safeMessage(e);
-                result.indeterminate = true;
-                return result;
-            }
+             */
+            String localIp = localIp();
             result.localAddress = localIp;
 
             /*
@@ -178,14 +171,12 @@ public class UpnpTester {
              * Fallar AddPortMapping NO significa DISPONIBLE.
              */
             if (!add.success) {
-                boolean rejected = isDefinitiveRouterRejection(add);
-                result.mapping = rejected ? "RECHAZADO" : "NO DETERMINADO";
-                result.routerRejected = rejected;
-                result.indeterminate = !rejected;
-                result.status = rejected
-                        ? "UPnP DETECTADO · ROUTER RECHAZÓ EL MAPEO"
-                        : "UPnP DETECTADO · MAPEO NO DETERMINADO";
+                result.mapping = "RECHAZADO";
+                result.routerRejected = true;
+                result.indeterminate = false;
+                result.status = "UPnP DETECTADO · ROUTER RECHAZÓ EL MAPE0";
                 result.error = buildSoapError(add);
+
                 return result;
             }
 
@@ -207,7 +198,7 @@ public class UpnpTester {
 
             if (!verify.success) {
                 result.mapping = "NO DETERMINADO";
-                result.status = "UPnP DETECTADO · MAPEO NO VERIFICADO";
+                result.status = "UPnP DETECTADO · MAPE0 NO VERIFICADO";
                 result.error = "El router aceptó la solicitud pero no se pudo verificar el mapeo.";
                 result.indeterminate = true;
                 return result;
@@ -216,20 +207,10 @@ public class UpnpTester {
             /*
              * El mapeo fue creado y consultado correctamente.
              */
-            String mappedClient = xmlValue(verify.body, "NewInternalClient");
-
-            if (mappedClient == null || !localIp.equals(mappedClient.trim())) {
-                result.mapping = "NO DETERMINADO";
-                result.status = "UPnP DETECTADO · MAPEO NO VERIFICADO";
-                result.error = "El mapeo no corresponde a la IP local de esta prueba.";
-                result.indeterminate = true;
-                return result;
-            }
-
             result.mapping = "VERIFICADO";
             result.mappingVerified = true;
             result.indeterminate = false;
-            result.status = "UPnP · MAPEO VERIFICADO";
+            result.status = "UPnP · MAPE0 VERIFICADO";
 
             result.leaseSeconds = parse(
                     verify.body,
@@ -614,37 +595,6 @@ public class UpnpTester {
         }
 
         return "El router rechazó o no confirmó la operación SOAP.";
-    }
-
-    private static boolean isDefinitiveRouterRejection(SoapResult result) {
-        if (result == null) return false;
-
-        String text = (
-                (result.error == null ? "" : result.error) + " " +
-                (result.body == null ? "" : result.body)
-        ).toLowerCase();
-
-        return result.httpCode == 401 ||
-               result.httpCode == 403 ||
-               text.contains("718") ||
-               text.contains("conflictinmappingentry") ||
-               text.contains("notauthorized") ||
-               text.contains("permissiondenied");
-    }
-
-    private static String xmlValue(String xml, String tag) {
-        if (xml == null) return null;
-
-        String open = "<" + tag + ">";
-        String close = "</" + tag + ">";
-
-        int start = xml.indexOf(open);
-        if (start < 0) return null;
-
-        int end = xml.indexOf(close, start + open.length());
-        if (end < 0) return null;
-
-        return xml.substring(start + open.length(), end).trim();
     }
 
     private static String buildSoapError(SoapResult result) {

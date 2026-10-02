@@ -14,15 +14,12 @@ import android.widget.AutoCompleteTextView;
 
 import com.ps3online.dnstester.model.GameProfile;
 import com.ps3online.dnstester.data.GameLibrary;
-import com.ps3online.dnstester.data.CommunityRegistry;
 import com.ps3online.dnstester.model.DnsCombo;
 import com.ps3online.dnstester.dns.DnsTester;
 import com.ps3online.dnstester.p2p.P2PSession;
 import com.ps3online.dnstester.stun.StunP2P;
 import com.ps3online.dnstester.data.GameSearchService;
 import com.ps3online.dnstester.system.SystemStatusService;
-import com.ps3online.dnstester.interpretation.ResultInterpreter;
-import com.ps3online.dnstester.interpretation.TestResult;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -36,14 +33,6 @@ public class MainActivity extends Activity {
     private TextView verificationCard;
     private TextView requirementCard;
     private TextView status;
-
-    // Comunidad dinámica asociada al juego o al DNS seleccionado.
-    private TextView communityInfo;
-    private Button communityButton;
-    private LinearLayout communityListContainer;
-    private final List<CommunityRegistry.CommunityInfo> selectedCommunities =
-            new ArrayList<>();
-
     private EditText customDns;
     private Button testButton;
     private Button copyButton;
@@ -54,10 +43,6 @@ public class MainActivity extends Activity {
     private boolean p2pRunning = false;
 
     private final List<GameProfile> games = new ArrayList<>();
-
-    // Perfil local del juego actualmente seleccionado.
-    // Permite que el diagnóstico use los metadatos reales de la biblioteca.
-    private GameProfile selectedGameProfile;
     private final List<DnsCombo> dnsCombos = new ArrayList<>();
     private GameLibrary gameLibrary;
 private GameSearchService gameSearchService;
@@ -67,124 +52,6 @@ private final ExecutorService dnsExecutor = Executors.newFixedThreadPool(2);
     private LinearLayout systemStatusContainer;
     private TextView systemSummary;
     private boolean systemStatusRunning = false;
-
-    /**
-     * Actualiza la tarjeta de comunidades relacionadas.
-     *
-     * Cada nombre funciona como enlace táctil independiente.
-     */
-    /**
-     * Actualiza la tarjeta de comunidades relacionadas.
-     * Cada comunidad se muestra como una fila tactil independiente.
-     */
-    private void updateCommunityCard() {
-        if (communityInfo == null || communityListContainer == null) {
-            return;
-        }
-
-        communityListContainer.removeAllViews();
-
-        if (selectedCommunities.isEmpty()) {
-            communityInfo.setText("👥 Selecciona un juego o una DNS para mostrar sus comunidades relacionadas.");
-            communityInfo.setOnClickListener(null);
-
-            if (communityButton != null) {
-                communityButton.setVisibility(View.GONE);
-            }
-            return;
-        }
-
-        communityInfo.setText("👥 COMUNIDADES RELACIONADAS");
-        communityInfo.setTextColor(android.graphics.Color.CYAN);
-        communityInfo.setOnClickListener(null);
-
-        if (communityButton != null) {
-            communityButton.setVisibility(View.GONE);
-        }
-
-        for (CommunityRegistry.CommunityInfo community : selectedCommunities) {
-            TextView communityRow = new TextView(this);
-
-            communityRow.setText("👥  " + community.name);
-            communityRow.setTextSize(16);
-            communityRow.setGravity(Gravity.CENTER_VERTICAL);
-            communityRow.setPadding(20, 18, 20, 18);
-            communityRow.setClickable(true);
-            communityRow.setFocusable(true);
-
-            communityRow.setOnClickListener(v -> openCommunity(community));
-
-            communityListContainer.addView(communityRow);
-        }
-    }
-
-
-     * Determina todas las comunidades aplicables al juego y DNS actual.
-     * Se eliminan duplicados por ID.
-     */
-    private List<CommunityRegistry.CommunityInfo> resolveCommunities(
-            GameProfile game,
-            DnsCombo combo
-    ) {
-        List<CommunityRegistry.CommunityInfo> result =
-                new ArrayList<>();
-
-        CommunityRegistry.CommunityInfo gameCommunity =
-                CommunityRegistry.getForGame(game);
-
-        if (gameCommunity != null) {
-            addCommunityIfMissing(result, gameCommunity);
-        }
-
-        CommunityRegistry.CommunityInfo dnsCommunity =
-                CommunityRegistry.getForDns(combo);
-
-        if (dnsCommunity != null) {
-            addCommunityIfMissing(result, dnsCommunity);
-        }
-
-        if (result.isEmpty()) {
-            result.add(CommunityRegistry.getPs3OnlineLan());
-        }
-
-        return result;
-    }
-
-    /**
-     * Agrega una comunidad evitando duplicados.
-     */
-    private void addCommunityIfMissing(
-            List<CommunityRegistry.CommunityInfo> list,
-            CommunityRegistry.CommunityInfo community
-    ) {
-        if (community == null) {
-            return;
-        }
-
-        for (CommunityRegistry.CommunityInfo existing : list) {
-            if (existing.id != null &&
-                    existing.id.equalsIgnoreCase(community.id)) {
-                return;
-            }
-        }
-
-        list.add(community);
-    }
-
-    /**
-     * Mantiene compatibilidad con la verificación individual.
-     */
-    private CommunityRegistry.CommunityInfo resolveCommunity(
-            GameProfile game,
-            DnsCombo combo
-    ) {
-        List<CommunityRegistry.CommunityInfo> communities =
-                resolveCommunities(game, combo);
-
-        return communities.isEmpty()
-                ? CommunityRegistry.getPs3OnlineLan()
-                : communities.get(0);
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -724,17 +591,6 @@ root.addView(dnsInstruction);
                     DnsCombo combo =
                             selectedDnsCombos.get(position);
 
-                    // Reúne todas las comunidades del juego y del DNS.
-                    selectedCommunities.clear();
-                    selectedCommunities.addAll(
-                            resolveCommunities(
-                                    selectedGameProfile,
-                                    combo
-                            )
-                    );
-
-                    updateCommunityCard();
-
                     if (combo.dnsPrimaria != null) {
                         dnsSelector.setText(
                                 combo.dnsPrimaria,
@@ -1134,7 +990,7 @@ root.addView(dnsInstruction);
         communityTitle.setPadding(0, 32, 0, 10);
         root.addView(communityTitle);
 
-        communityInfo = new TextView(this);
+        TextView communityInfo = new TextView(this);
         communityInfo.setText(
                 "Comunidades disponibles para registro, " +
                 "verificación y soporte de juegos.\n\n" +
@@ -1151,13 +1007,10 @@ root.addView(dnsInstruction);
         communityInfo.setPadding(20, 12, 20, 12);
         root.addView(communityInfo);
 
-        communityButton = new Button(this);
+        Button communityButton = new Button(this);
         communityButton.setText("👥 ABRIR ENLACES DE COMUNIDAD");
         communityButton.setAllCaps(false);
         root.addView(communityButton);
-
-        // Inicializa la tarjeta y el botón de comunidad.
-        updateCommunityCard();
 
         TextView faqTitle = new TextView(this);
         faqTitle.setText("7. ❓ FAQ");
@@ -1261,9 +1114,6 @@ gameSelector.setOnItemClickListener(
              * requisitos para un resultado externo.
              */
             if (game == null) {
-                    selectedGameProfile = null;
-                    selectedCommunities.clear();
-                    updateCommunityCard();
 
                 selectedDnsCombos.clear();
 
@@ -1313,19 +1163,7 @@ gameSelector.setOnItemClickListener(
              * JUEGO REGISTRADO:
              * conservamos el comportamiento original.
              */
-            selectedGameProfile = game;
             selectedDnsCombos.clear();
-
-            // Reúne todas las comunidades asociadas al juego.
-            selectedCommunities.clear();
-            selectedCommunities.addAll(
-                    resolveCommunities(
-                            selectedGameProfile,
-                            null
-                    )
-            );
-
-            updateCommunityCard();
 
             for (String comboId : game.dnsComboIds) {
 
@@ -1405,20 +1243,11 @@ gameSelector.setOnItemClickListener(
              */
             if (game.requiereVerificacion) {
 
-                CommunityRegistry.CommunityInfo verificationCommunity =
-                        resolveCommunity(game, null);
-
-                String communityName =
-                        verificationCommunity != null
-                                ? verificationCommunity.name
-                                : "PS3 Online y LAN";
-
                 verificationCard.setText(
                         "⚠️ VERIFICACIÓN EN COMUNIDAD REQUERIDA\n\n" +
-                        "Este juego no se marca como PSN ACTIVO.\n\n" +
-                        "👥 COMUNIDAD: " + communityName + "\n\n" +
-                        "La disponibilidad debe comprobarse en la " +
-                        "comunidad correspondiente."
+                        "Este juego no se marca como PSN ACTIVO.\n" +
+                        "La disponibilidad debe comprobarse mediante " +
+                        "la comunidad correspondiente."
                 );
 
                 verificationCard.setVisibility(
@@ -1894,154 +1723,73 @@ gameSelector.setOnItemClickListener(
             DnsTester.Result secondaryResult,
             long totalMs) {
 
-        boolean primaryOk =
-                primaryResult != null && primaryResult.ok;
+        boolean primaryOk = primaryResult != null &&
+                primaryResult.ok;
 
-        boolean secondaryOk =
-                secondaryResult != null && secondaryResult.ok;
+        boolean secondaryOk = secondaryResult != null &&
+                secondaryResult.ok;
 
-        /*
-         * FASE 4:
-         * El resultado DNS ya no decide por sí solo
-         * que una configuración esté "lista para jugar".
-         *
-         * El DNS solamente aporta evidencia DNS al
-         * ResultInterpreter. Las pruebas de PSN,
-         * servicio del juego y P2P se incorporarán
-         * posteriormente cuando exista evidencia real.
-         */
+        String title;
 
-        TestResult dnsResult;
+        if (primaryOk && secondaryOk) {
 
-        if (primaryOk || secondaryOk) {
-            dnsResult = TestResult.DNS_OK;
-        } else if (primaryResult != null || secondaryResult != null) {
-            dnsResult = TestResult.DNS_FAIL;
+            title =
+                    "🟢 COMBO EXCELENTE / LISTO PARA JUGAR";
+
+        } else if (!primaryOk && secondaryOk) {
+
+            title =
+                    "🟡 FUNCIONANDO EN RESPALDO " +
+                    "(Ligera demora al conectar)";
+
+        } else if (primaryOk && !secondaryOk) {
+
+            title =
+                    "🟡 DNS PRIMARIA FUNCIONANDO / " +
+                    "SECUNDARIA SIN RESPUESTA";
+
         } else {
-            dnsResult = TestResult.DNS_UNKNOWN;
+
+            title =
+                    "🔴 SERVIDORES DNS SIN RESPUESTA";
         }
 
-        ResultInterpreter.DiagnosticInput input =
-                new ResultInterpreter.DiagnosticInput();
+        StringBuilder result = new StringBuilder();
 
-        input.gameName =
-                gameSelector == null
-                        ? ""
-                        : gameSelector.getText().toString().trim();
+        result.append(
+                "⚡ RESULTADO DE PRUEBA DNS\n\n"
+        );
 
-        input.primaryDns = primary;
-        input.secondaryDns = secondary;
-
-        input.dns = dnsResult;
-
-        /*
-         * Todavía no se ha ejecutado una prueba real
-         * específica del servicio del juego en este flujo.
-         *
-         * Por eso permanece UNKNOWN.
-         *
-         * Esto es intencional: UNKNOWN nunca debe
-         * convertirse artificialmente en OK.
-         */
-        input.gameService =
-                TestResult.GAME_SERVICE_UNKNOWN;
-
-        /*
-         * Este flujo tampoco realiza una prueba PSN
-         * independiente.
-         */
-        /*
-         * La ficha de la biblioteca indica si el juego está marcado
-         * como PSN activo, pero eso NO constituye una prueba real
-         * de conectividad PSN.
-         *
-         * Por eso la prueba permanece UNKNOWN hasta disponer de
-         * evidencia de red independiente.
-         */
-        input.psn = TestResult.PSN_UNKNOWN;
-
-        /*
-         * The Last of Us (id=tlou) es una excepción definida en
-         * la biblioteca: DNS + verificación, sin requisito PSN.
-         *
-         * Para juegos registrados normalmente, psnRequired queda
-         * activo cuando la ficha pertenece al sistema PS3 ONLINE.
-         * Para juegos externos no exigimos PSN porque no tenemos
-         * metadatos locales suficientes.
-         */
-        boolean hasLocalGame = selectedGameProfile != null;
-
-        boolean isTheLastOfUs =
-                hasLocalGame &&
-                selectedGameProfile.id != null &&
-                "tlou".equalsIgnoreCase(
-                        selectedGameProfile.id.trim()
-                );
-
-        input.psnRequired =
-                hasLocalGame &&
-                selectedGameProfile.psnActivo &&
-                !isTheLastOfUs;
-
-        /*
-         * STUN/P2P/UPnP no se ejecutan dentro de
-         * testDnsSimultaneously(), por lo que permanecen
-         * desconocidos.
-         */
-        input.stun = TestResult.STUN_UNKNOWN;
-        input.upnp = TestResult.UPNP_UNKNOWN;
-        input.p2p = TestResult.P2P_UNKNOWN;
-        input.latency = TestResult.LATENCY_UNKNOWN;
-        input.loss = TestResult.LOSS_UNKNOWN;
-
-        ResultInterpreter.Interpretation interpretation =
-                ResultInterpreter.interpret(input);
-
-        StringBuilder result =
-                new StringBuilder();
-
-        result.append("⚡ RESULTADO DEL ANÁLISIS\n\n");
-
-        result.append(interpretation.title)
-                .append("\n\n");
-
-        result.append(interpretation.summary)
-                .append("\n\n");
-
-        result.append("━━━━━━━━━━━━━━━━━━━━\n");
-        result.append("🌐 EVIDENCIA DNS\n\n");
+        result.append(title).append("\n\n");
 
         result.append("DNS PRIMARIA\n");
 
         if (primaryResult != null) {
 
             if (primaryResult.ok) {
-                result.append("🟢 RESPONDE\n");
-            } else if (primaryResult.message != null
-                    && primaryResult.message.contains("RCODE=5")) {
-
+                result.append("🟢 OK\n");
+            } else if (primaryResult.message != null &&
+                    primaryResult.message.contains("RCODE=5")) {
                 result.append(
                         "🟠 RESPONDE PERO RECHAZA LA CONSULTA\n"
                 );
-
             } else {
-                result.append("🔴 SIN RESPUESTA VÁLIDA\n");
+                result.append("🔴 SIN RESPUESTA\n");
             }
 
             result.append("IP: ")
-                    .append(primary)
-                    .append("\n");
+                  .append(primary)
+                  .append("\n");
 
             result.append("Tiempo: ")
-                    .append(primaryResult.rttMs)
-                    .append(" ms\n");
+                  .append(primaryResult.rttMs)
+                  .append(" ms\n");
 
             result.append(primaryResult.message)
-                    .append("\n");
+                  .append("\n");
 
         } else {
-
-            result.append("⚪ NO CONFIGURADA\n");
+            result.append("🔴 SIN RESULTADO\n");
         }
 
         result.append("\nDNS SECUNDARIA\n");
@@ -2049,85 +1797,37 @@ gameSelector.setOnItemClickListener(
         if (secondaryResult != null) {
 
             if (secondaryResult.ok) {
-                result.append("🟢 RESPONDE\n");
-
-            } else if (secondaryResult.message != null
-                    && secondaryResult.message.contains("RCODE=5")) {
-
+                result.append("🟢 OK\n");
+            } else if (secondaryResult.message != null &&
+                    secondaryResult.message.contains("RCODE=5")) {
                 result.append(
                         "🟠 RESPONDE PERO RECHAZA LA CONSULTA\n"
                 );
-
             } else {
-                result.append("🔴 SIN RESPUESTA VÁLIDA\n");
+                result.append("🔴 SIN RESPUESTA\n");
             }
 
             result.append("IP: ")
-                    .append(secondary)
-                    .append("\n");
+                  .append(secondary)
+                  .append("\n");
 
             result.append("Tiempo: ")
-                    .append(secondaryResult.rttMs)
-                    .append(" ms\n");
+                  .append(secondaryResult.rttMs)
+                  .append(" ms\n");
 
             result.append(secondaryResult.message)
-                    .append("\n");
+                  .append("\n");
 
         } else {
-
-            result.append("⚪ NO CONFIGURADA\n");
+            result.append("🔴 SIN RESULTADO\n");
         }
 
         result.append("\nTiempo total: ")
-                .append(totalMs)
-                .append(" ms\n");
-
-        result.append("\n━━━━━━━━━━━━━━━━━━━━\n");
-        result.append("📋 INTERPRETACIÓN\n\n");
-
-        result.append(interpretation.communityMessage)
-                .append("\n\n");
-
-        result.append("🔬 TÉCNICO\n")
-                .append(interpretation.technicalMessage)
-                .append("\n\n");
-
-        if (!interpretation.observations.isEmpty()) {
-
-            result.append("🔎 OBSERVACIONES\n");
-
-            for (String observation :
-                    interpretation.observations) {
-
-                result.append("• ")
-                        .append(observation)
-                        .append("\n");
-            }
-
-            result.append("\n");
-        }
-
-        if (!interpretation.recommendations.isEmpty()) {
-
-            result.append("🛠️ SIGUIENTE PASO\n");
-
-            for (String recommendation :
-                    interpretation.recommendations) {
-
-                result.append("• ")
-                        .append(recommendation)
-                        .append("\n");
-            }
-
-            result.append("\n");
-        }
-
-        result.append("━━━━━━━━━━━━━━━━━━━━\n");
-        result.append("Consulta real: DNS A / UDP 53\n\n");
+              .append(totalMs)
+              .append(" ms\n");
 
         result.append(
-                "⚠️ DNS funcional no significa por sí solo "
-                + "compatibilidad con un juego PS3."
+                "\nConsulta real: DNS A / UDP 53"
         );
 
         status.setText(result.toString());

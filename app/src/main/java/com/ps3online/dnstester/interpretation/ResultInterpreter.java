@@ -1,0 +1,736 @@
+package com.ps3online.dnstester.interpretation;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Motor central de interpretación de resultados.
+ *
+ * IMPORTANTE:
+ * Este componente NO realiza pruebas de red.
+ * Solamente interpreta resultados que ya fueron obtenidos
+ * por DNS, PSN, STUN, UPnP y P2P.
+ *
+ * De esta manera:
+ *
+ * prueba técnica
+ *      ↓
+ * resultado técnico
+ *      ↓
+ * ResultInterpreter
+ *      ↓
+ * lenguaje comunitario
+ */
+public final class ResultInterpreter {
+
+    private ResultInterpreter() {
+        // Clase utilitaria.
+    }
+
+    /**
+     * Datos completos de una sesión de diagnóstico.
+     */
+    public static class DiagnosticInput {
+
+        public TestResult dns = TestResult.DNS_UNKNOWN;
+        public TestResult psn = TestResult.PSN_UNKNOWN;
+        public TestResult gameService = TestResult.GAME_SERVICE_UNKNOWN;
+        public TestResult stun = TestResult.STUN_UNKNOWN;
+        public TestResult upnp = TestResult.UPNP_UNKNOWN;
+        public TestResult p2p = TestResult.P2P_UNKNOWN;
+
+        public TestResult latency = TestResult.LATENCY_UNKNOWN;
+        public TestResult loss = TestResult.LOSS_UNKNOWN;
+
+        /**
+         * Caso especial:
+         * algunos juegos no utilizan PSN de la misma manera
+         * o requieren solamente DNS + verificación.
+         *
+         * Ejemplo actual:
+         * The Last of Us.
+         */
+        public boolean psnRequired = true;
+
+        /**
+         * Nombre del juego analizado.
+         */
+        public String gameName = "";
+
+        /**
+         * DNS primaria utilizada.
+         */
+        public String primaryDns = "";
+
+        /**
+         * DNS secundaria utilizada.
+         */
+        public String secondaryDns = "";
+
+        /**
+         * Latencia media en ms.
+         */
+        public long latencyMs = -1;
+
+        /**
+         * Porcentaje de pérdida.
+         */
+        public double packetLossPercent = -1;
+    }
+
+    /**
+     * Resultado final que consume la interfaz.
+     */
+    public static class Interpretation {
+
+        public final String status;
+        public final String title;
+        public final String summary;
+        public final String communityMessage;
+        public final String technicalMessage;
+        public final List<String> observations;
+        public final List<String> recommendations;
+
+        public Interpretation(
+                String status,
+                String title,
+                String summary,
+                String communityMessage,
+                String technicalMessage,
+                List<String> observations,
+                List<String> recommendations
+        ) {
+            this.status = status;
+            this.title = title;
+            this.summary = summary;
+            this.communityMessage = communityMessage;
+            this.technicalMessage = technicalMessage;
+            this.observations = observations;
+            this.recommendations = recommendations;
+        }
+    }
+
+    /**
+     * Punto de entrada principal.
+     */
+    public static Interpretation interpret(DiagnosticInput input) {
+
+        if (input == null) {
+            return unknownResult();
+        }
+
+        List<String> observations = new ArrayList<>();
+        List<String> recommendations = new ArrayList<>();
+
+        /*
+         * ==========================================================
+         * REGLA 1
+         * DNS completamente caída.
+         * ==========================================================
+         */
+        if (input.dns == TestResult.DNS_FAIL) {
+
+            observations.add(
+                    "El servidor DNS seleccionado no respondió correctamente."
+            );
+
+            recommendations.add(
+                    "Prueba nuevamente con una DNS pública conocida."
+            );
+
+            return build(
+                    "🔴",
+                    "DNS NO FUNCIONAL",
+                    "La conexión no puede continuar correctamente porque "
+                            + "la resolución DNS no está funcionando.",
+                    "🔴 El DNS no está funcionando para esta prueba.",
+                    "No se obtuvo una respuesta DNS válida.",
+                    observations,
+                    recommendations
+            );
+        }
+
+        /*
+         * ==========================================================
+         * REGLA 2
+         * DNS desconocida.
+         * ==========================================================
+         */
+        if (input.dns == TestResult.DNS_UNKNOWN) {
+
+            observations.add(
+                    "No fue posible determinar el estado del DNS."
+            );
+
+            recommendations.add(
+                    "Repite el análisis para obtener una respuesta DNS."
+            );
+
+            return build(
+                    "⚠️",
+                    "DNS NO DETERMINADO",
+                    "La aplicación no tiene suficiente información "
+                            + "para confirmar el funcionamiento del DNS.",
+                    "⚠️ No se pudo confirmar el DNS.",
+                    "El resultado DNS está en estado desconocido.",
+                    observations,
+                    recommendations
+            );
+        }
+
+        /*
+         * ==========================================================
+         * REGLA 3
+         * DNS funciona, pero PSN no.
+         * ==========================================================
+         */
+        if (input.psnRequired
+                && input.psn == TestResult.PSN_FAIL) {
+
+            observations.add(
+                    "El DNS responde correctamente."
+            );
+
+            observations.add(
+                    "El acceso al servicio PSN probado no respondió."
+            );
+
+            recommendations.add(
+                    "Comprueba el estado de PSN y verifica el DNS "
+                            + "en la comunidad correspondiente."
+            );
+
+            return build(
+                    "🟡",
+                    "DNS FUNCIONAL · PSN NO ACCESIBLE",
+                    "El DNS funciona, pero la prueba de acceso a PSN "
+                            + "no obtuvo respuesta.",
+                    "🟡 El DNS funciona, pero PSN no respondió "
+                            + "durante esta prueba.",
+                    "La resolución DNS fue correcta, pero la prueba "
+                            + "del servicio PSN falló.",
+                    observations,
+                    recommendations
+            );
+        }
+
+        /*
+         * ==========================================================
+         * REGLA 4
+         * DNS + PSN OK, pero servicio del juego falla.
+         * ==========================================================
+         */
+        if (input.gameService == TestResult.GAME_SERVICE_FAIL) {
+
+            observations.add(
+                    "El DNS responde correctamente."
+            );
+
+            if (input.psnRequired
+                    && input.psn == TestResult.PSN_OK) {
+
+                observations.add(
+                        "La prueba de PSN respondió correctamente."
+                );
+            }
+
+            observations.add(
+                    "El servicio específico del juego no respondió."
+            );
+
+            recommendations.add(
+                    "Verifica si el servidor del juego está activo."
+            );
+
+            recommendations.add(
+                    "Comprueba el DNS y la configuración recomendada "
+                            + "por la comunidad del juego."
+            );
+
+            return build(
+                    "🟡",
+                    "DNS FUNCIONAL · SERVICIO DEL JUEGO NO ACCESIBLE",
+                    "La conexión básica funciona, pero el servicio "
+                            + "específico del juego no respondió.",
+                    "🟡 El DNS funciona, pero el servicio del juego "
+                            + "no pudo ser confirmado.",
+                    "DNS correcto. El endpoint del servicio del juego "
+                            + "no respondió durante la prueba.",
+                    observations,
+                    recommendations
+            );
+        }
+
+        /*
+         * ==========================================================
+         * REGLA 5
+         * P2P bidireccional confirmado sin pérdida relevante.
+         * ==========================================================
+         */
+        if (input.p2p == TestResult.P2P_BIDIRECTIONAL_OK
+                && isLowOrNoLoss(input.loss)) {
+
+            observations.add(
+                    "Se detectó tráfico UDP en ambos sentidos."
+            );
+
+            observations.add(
+                    "La comunicación P2P fue confirmada mediante tráfico real."
+            );
+
+            if (input.latencyMs >= 0) {
+                observations.add(
+                        "Latencia P2P observada: "
+                                + input.latencyMs
+                                + " ms."
+                );
+            }
+
+            return build(
+                    "🟢",
+                    "P2P BIDIRECCIONAL CONFIRMADO",
+                    "Se confirmó comunicación P2P entre ambos dispositivos "
+                            + "durante la prueba.",
+                    "🟢 La conexión P2P fue confirmada. "
+                            + "La comunicación entre jugadores funciona "
+                            + "en ambos sentidos durante esta prueba.",
+                    "Se recibió tráfico UDP válido y se obtuvieron "
+                            + "muestras de comunicación bidireccional.",
+                    observations,
+                    recommendations
+            );
+        }
+
+        /*
+         * ==========================================================
+         * REGLA 6
+         * P2P funciona pero existe pérdida.
+         * ==========================================================
+         */
+        if (input.p2p == TestResult.P2P_BIDIRECTIONAL_LOSS) {
+
+            observations.add(
+                    "Se detectó comunicación P2P."
+            );
+
+            observations.add(
+                    "Se observaron pérdidas de paquetes."
+            );
+
+            recommendations.add(
+                    "Comprueba la estabilidad de ambas conexiones."
+            );
+
+            recommendations.add(
+                    "Si el problema continúa, revisa NAT, UPnP y router."
+            );
+
+            return build(
+                    "🟡",
+                    "P2P CON PÉRDIDA DE PAQUETES",
+                    "La comunicación P2P funciona, pero presenta "
+                            + "pérdida de paquetes.",
+                    "🟡 Los jugadores pueden conectarse, pero "
+                            + "la pérdida observada puede afectar "
+                            + "las partidas.",
+                    buildTechnicalMessage(input),
+                    observations,
+                    recommendations
+            );
+        }
+
+        /*
+         * ==========================================================
+         * REGLA 7
+         * Solo existe tráfico en un sentido.
+         * ==========================================================
+         */
+        if (input.p2p == TestResult.P2P_ONE_WAY) {
+
+            observations.add(
+                    "Se detectó tráfico P2P solamente en un sentido."
+            );
+
+            recommendations.add(
+                    "Revisa NAT, UPnP y las restricciones del router."
+            );
+
+            return build(
+                    "🟡",
+                    "P2P PARCIAL",
+                    "Existe comunicación entre los dispositivos, "
+                            + "pero no se confirmó correctamente el tráfico "
+                            + "en ambos sentidos.",
+                    "🟡 Hay comunicación, pero la conexión P2P "
+                            + "no está completamente confirmada.",
+                    "Se recibió tráfico de un sentido sin evidencia "
+                            + "suficiente del sentido contrario.",
+                    observations,
+                    recommendations
+            );
+        }
+
+        /*
+         * ==========================================================
+         * REGLA 8
+         * No hay tráfico P2P.
+         * ==========================================================
+         */
+        if (input.p2p == TestResult.P2P_NO_TRAFFIC) {
+
+            observations.add(
+                    "No se recibió tráfico UDP P2P durante la prueba."
+            );
+
+            recommendations.add(
+                    "Comprueba NAT y UPnP."
+            );
+
+            recommendations.add(
+                    "Verifica que ambos dispositivos estén en redes "
+                            + "diferentes y tengan Internet."
+            );
+
+            return build(
+                    "⚠️",
+                    "P2P NO DETERMINADO",
+                    "No se recibió tráfico P2P suficiente para confirmar "
+                            + "la comunicación entre los dispositivos.",
+                    "⚠️ No se pudo confirmar P2P en esta prueba.",
+                    "No se recibieron paquetes UDP P2P válidos.",
+                    observations,
+                    recommendations
+            );
+        }
+
+        /*
+         * ==========================================================
+         * REGLA 9
+         * DNS + PSN + juego OK.
+         * ==========================================================
+         */
+        boolean dnsOk = input.dns == TestResult.DNS_OK;
+
+        boolean psnOk = !input.psnRequired
+                || input.psn == TestResult.PSN_OK;
+
+        boolean gameOk =
+                input.gameService == TestResult.GAME_SERVICE_OK;
+
+        if (dnsOk && psnOk && gameOk) {
+
+            observations.add(
+                    "El DNS respondió correctamente."
+            );
+
+            if (input.psnRequired) {
+                observations.add(
+                        "PSN respondió correctamente."
+                );
+            }
+
+            if (input.gameService == TestResult.GAME_SERVICE_OK) {
+                observations.add(
+                        "El servicio del juego respondió correctamente."
+                );
+            }
+
+            recommendations.add(
+                    "Verifica el resultado con la comunidad del juego "
+                            + "si estás intentando recuperar servidores "
+                            + "no oficiales."
+            );
+
+            return build(
+                    "🟢",
+                    "CONEXIÓN COMPATIBLE PARA LAS PRUEBAS REALIZADAS",
+                    "Las pruebas disponibles respondieron correctamente.",
+                    "🟢 La conexión funciona para las pruebas realizadas.",
+                    buildTechnicalMessage(input),
+                    observations,
+                    recommendations
+            );
+        }
+
+        /*
+         * ==========================================================
+         * REGLA 10
+         * DNS funciona, pero faltan pruebas.
+         * ==========================================================
+         */
+        if (dnsOk) {
+
+            observations.add(
+                    "El DNS responde correctamente."
+            );
+
+            recommendations.add(
+                    "Completa las pruebas disponibles para obtener "
+                            + "una interpretación más precisa."
+            );
+
+            return build(
+                    "🟡",
+                    "DNS FUNCIONAL · ANÁLISIS PARCIAL",
+                    "El DNS funciona, pero todavía no hay información "
+                            + "suficiente para confirmar todos los servicios.",
+                    "🟡 El DNS funciona, pero faltan pruebas "
+                            + "para confirmar la compatibilidad completa.",
+                    buildTechnicalMessage(input),
+                    observations,
+                    recommendations
+            );
+        }
+
+        /*
+         * ==========================================================
+         * RESULTADO GENERAL DESCONOCIDO
+         * ==========================================================
+         */
+        return unknownResult();
+    }
+
+    /**
+     * Interpreta específicamente un resultado de DNS.
+     */
+    public static String interpretDns(TestResult dns) {
+
+        if (dns == TestResult.DNS_OK) {
+            return "🟢 DNS FUNCIONAL";
+        }
+
+        if (dns == TestResult.DNS_FAIL) {
+            return "🔴 DNS NO FUNCIONAL";
+        }
+
+        return "⚠️ DNS NO DETERMINADO";
+    }
+
+    /**
+     * Interpreta específicamente el resultado P2P.
+     */
+    public static String interpretP2P(TestResult p2p) {
+
+        if (p2p == TestResult.P2P_BIDIRECTIONAL_OK) {
+            return "🟢 P2P BIDIRECCIONAL CONFIRMADO";
+        }
+
+        if (p2p == TestResult.P2P_BIDIRECTIONAL_LOSS) {
+            return "🟡 P2P CON PÉRDIDA DE PAQUETES";
+        }
+
+        if (p2p == TestResult.P2P_ONE_WAY) {
+            return "🟡 P2P PARCIAL";
+        }
+
+        if (p2p == TestResult.P2P_NO_TRAFFIC) {
+            return "⚠️ P2P NO DETERMINADO";
+        }
+
+        return "⚠️ P2P NO DETERMINADO";
+    }
+
+    /**
+     * Interpreta la latencia.
+     */
+    public static String interpretLatency(long latencyMs) {
+
+        if (latencyMs < 0) {
+            return "⚠️ LATENCIA NO DETERMINADA";
+        }
+
+        if (latencyMs <= 80) {
+            return "🟢 LATENCIA BAJA";
+        }
+
+        if (latencyMs <= 150) {
+            return "🟡 LATENCIA MEDIA";
+        }
+
+        return "🔴 LATENCIA ALTA";
+    }
+
+    /**
+     * Interpreta la pérdida.
+     */
+    public static String interpretLoss(double lossPercent) {
+
+        if (lossPercent < 0) {
+            return "⚠️ PÉRDIDA NO DETERMINADA";
+        }
+
+        if (lossPercent <= 1) {
+            return "🟢 SIN PÉRDIDA SIGNIFICATIVA";
+        }
+
+        if (lossPercent <= 5) {
+            return "🟢 PÉRDIDA BAJA";
+        }
+
+        if (lossPercent <= 15) {
+            return "🟡 PÉRDIDA MODERADA";
+        }
+
+        return "🔴 PÉRDIDA ALTA";
+    }
+
+    /**
+     * Determina si la pérdida es aceptablemente baja.
+     */
+    private static boolean isLowOrNoLoss(TestResult loss) {
+
+        return loss == TestResult.LOSS_NONE
+                || loss == TestResult.LOSS_LOW;
+    }
+
+    /**
+     * Construye información técnica legible.
+     */
+    private static String buildTechnicalMessage(
+            DiagnosticInput input
+    ) {
+
+        StringBuilder text = new StringBuilder();
+
+        if (input.dns != TestResult.DNS_UNKNOWN) {
+            text.append("DNS: ")
+                    .append(interpretDns(input.dns))
+                    .append(". ");
+        }
+
+        if (input.psnRequired
+                && input.psn != TestResult.PSN_UNKNOWN) {
+
+            text.append("PSN: ");
+
+            if (input.psn == TestResult.PSN_OK) {
+                text.append("accesible. ");
+            } else if (input.psn == TestResult.PSN_FAIL) {
+                text.append("no accesible. ");
+            } else {
+                text.append("no determinado. ");
+            }
+        }
+
+        if (input.gameService
+                != TestResult.GAME_SERVICE_UNKNOWN) {
+
+            text.append("Servicio del juego: ");
+
+            if (input.gameService
+                    == TestResult.GAME_SERVICE_OK) {
+
+                text.append("accesible. ");
+
+            } else if (input.gameService
+                    == TestResult.GAME_SERVICE_FAIL) {
+
+                text.append("no accesible. ");
+
+            } else {
+
+                text.append("no determinado. ");
+            }
+        }
+
+        if (input.stun != TestResult.STUN_UNKNOWN) {
+
+            text.append("Conectividad externa: ");
+
+            if (input.stun == TestResult.STUN_OK) {
+                text.append("endpoint externo detectado; NAT/P2P aún no clasificado. ");
+            } else if (input.stun == TestResult.STUN_FAIL) {
+                text.append("no determinada. ");
+            }
+        }
+
+        if (input.upnp != TestResult.UPNP_UNKNOWN) {
+
+            text.append("UPnP: ");
+
+            if (input.upnp == TestResult.UPNP_OK) {
+                text.append("mapeo de puerto verificado. ");
+            } else if (input.upnp == TestResult.UPNP_FAIL) {
+                text.append("mapeo no disponible. ");
+            }
+        }
+
+        if (input.latencyMs >= 0) {
+
+            text.append("Latencia: ")
+                    .append(input.latencyMs)
+                    .append(" ms. ");
+        }
+
+        if (input.packetLossPercent >= 0) {
+
+            text.append("Pérdida: ")
+                    .append(formatLoss(input.packetLossPercent))
+                    .append(". ");
+        }
+
+        return text.toString().trim();
+    }
+
+    private static String formatLoss(double value) {
+
+        return String.format(
+                java.util.Locale.US,
+                "%.1f%%",
+                value
+        );
+    }
+
+    /**
+     * Constructor de resultado.
+     */
+    private static Interpretation build(
+            String status,
+            String title,
+            String summary,
+            String communityMessage,
+            String technicalMessage,
+            List<String> observations,
+            List<String> recommendations
+    ) {
+
+        return new Interpretation(
+                status,
+                title,
+                summary,
+                communityMessage,
+                technicalMessage,
+                observations,
+                recommendations
+        );
+    }
+
+    /**
+     * Resultado cuando no hay información suficiente.
+     */
+    private static Interpretation unknownResult() {
+
+        List<String> observations = new ArrayList<>();
+        List<String> recommendations = new ArrayList<>();
+
+        observations.add(
+                "No hay información suficiente para determinar "
+                        + "el estado de la conexión."
+        );
+
+        recommendations.add(
+                "Ejecuta nuevamente el análisis."
+        );
+
+        return build(
+                "⚠️",
+                "RESULTADO NO DETERMINADO",
+                "No hay suficientes pruebas para interpretar "
+                        + "la conexión.",
+                "⚠️ No se pudo determinar la compatibilidad.",
+                "Los resultados técnicos están incompletos.",
+                observations,
+                recommendations
+        );
+    }
+}

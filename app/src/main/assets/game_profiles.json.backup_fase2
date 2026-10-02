@@ -411,7 +411,7 @@
       "alias": [
         "GRID"
       ],
-      "genero": "Carreras",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -424,7 +424,7 @@
       "alias": [
         "DiRT"
       ],
-      "genero": "Carreras",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -435,7 +435,7 @@
       "id": "stuntman_ignition",
       "nombre": "Stuntman Ignition",
       "alias": [],
-      "genero": "Carreras",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -461,7 +461,7 @@
       "alias": [
         "SVR 2008"
       ],
-      "genero": "Lucha",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -498,7 +498,7 @@
       "alias": [
         "MUA2"
       ],
-      "genero": "Acción/RPG",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -509,7 +509,7 @@
       "id": "pure_football",
       "nombre": "Pure Football",
       "alias": [],
-      "genero": "Deportes",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -535,7 +535,7 @@
       "alias": [
         "Guitar Hero III"
       ],
-      "genero": "Música",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -546,7 +546,7 @@
       "id": "guitar_hero_aerosmith",
       "nombre": "Guitar Hero: Aerosmith",
       "alias": [],
-      "genero": "Música",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -557,7 +557,7 @@
       "id": "guitar_hero_world_tour",
       "nombre": "Guitar Hero: World Tour",
       "alias": [],
-      "genero": "Música",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -568,7 +568,7 @@
       "id": "guitar_hero_metallica",
       "nombre": "Guitar Hero: Metallica",
       "alias": [],
-      "genero": "Música",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -581,7 +581,7 @@
       "alias": [
         "Greatest Hits"
       ],
-      "genero": "Música",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -592,7 +592,7 @@
       "id": "guitar_hero_van_halen",
       "nombre": "Guitar Hero: Van Halen",
       "alias": [],
-      "genero": "Música",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -603,7 +603,7 @@
       "id": "guitar_hero_5",
       "nombre": "Guitar Hero 5",
       "alias": [],
-      "genero": "Música",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -614,7 +614,7 @@
       "id": "guitar_hero_warriors",
       "nombre": "Guitar Hero: Warriors of Rock",
       "alias": [],
-      "genero": "Música",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -625,7 +625,7 @@
       "id": "band_hero",
       "nombre": "Band Hero",
       "alias": [],
-      "genero": "Música",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -636,7 +636,7 @@
       "id": "dj_hero",
       "nombre": "DJ Hero",
       "alias": [],
-      "genero": "Música",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -647,7 +647,7 @@
       "id": "dj_hero_2",
       "nombre": "DJ Hero 2",
       "alias": [],
-      "genero": "Música",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -658,7 +658,7 @@
       "id": "tony_hawk_shred",
       "nombre": "Tony Hawk: SHRED",
       "alias": [],
-      "genero": "Deportes",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -669,7 +669,7 @@
       "id": "007_quantum",
       "nombre": "007: Quantum of Solace",
       "alias": [],
-      "genero": "Acción/FPS",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -746,7 +746,7 @@
       "id": "transformers_revenge",
       "nombre": "Transformers: Revenge of the Fallen",
       "alias": [],
-      "genero": "Acción",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -757,7 +757,7 @@
       "id": "transformers_war",
       "nombre": "Transformers: War for Cybertron",
       "alias": [],
-      "genero": "Acción",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -768,7 +768,7 @@
       "id": "transformers_fall",
       "nombre": "Transformers: Fall of Cybertron",
       "alias": [],
-      "genero": "Acción",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -779,7 +779,7 @@
       "id": "transformers_dark",
       "nombre": "Transformers: Dark of the Moon",
       "alias": [],
-      "genero": "Acción",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -790,7 +790,7 @@
       "id": "transformers_rise",
       "nombre": "Transformers: Rise of the Dark Spark",
       "alias": [],
-      "genero": "Acción",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -813,7 +813,7 @@
       "id": "shaun_white",
       "nombre": "Shaun White Snowboarding",
       "alias": [],
-      "genero": "Deportes",
+      "genero": "FPS",
       "psnActivo": false,
       "requiereVerificacion": false,
       "dnsComboIds": [
@@ -1019,10 +1019,7 @@
       "estado": "AZUL_COMUNIDAD",
       "fuente": "PS3 Reborn",
       "grupoId": "ps3_reborn",
-      "nota": "Combo compartido por el grupo PS3 Reborn.",
-      "secundariasAlternativas": [
-        "1.1.1.1"
-      ]
+      "nota": "Combo compartido por el grupo PS3 Reborn."
     }
   ]
 }
