@@ -9,3 +9,10 @@ backup_v40/
 app/src/main/java/com/ps3online/dnstester/MainActivity.java.bak
 local.properties
 signaling-server/server.log
+
+# Node / signaling server
+signaling-server/node_modules/
+signaling-server/server.log
+
+# Android local configuration
+local.properties
