@@ -1060,9 +1060,9 @@ root.addView(dnsInstruction);
         systemStatusContainer.setPadding(20, 12, 20, 12);
 
         GradientDrawable systemBackground = new GradientDrawable();
-        systemBackground.setColor(Color.rgb(245, 245, 245));
+        systemBackground.setColor(Color.rgb(18, 22, 30));
         systemBackground.setCornerRadius(24);
-        systemBackground.setStroke(2, Color.GRAY);
+        systemBackground.setStroke(2, Color.rgb(70, 80, 95));
         systemStatusContainer.setBackground(systemBackground);
 
         systemSummary = new TextView(this);
@@ -1072,6 +1072,7 @@ root.addView(dnsInstruction);
                 "PSN y los servicios de conectividad disponibles."
         );
         systemSummary.setTextSize(14);
+        systemSummary.setTextColor(Color.WHITE);
         systemSummary.setGravity(Gravity.START);
         systemSummary.setPadding(16, 16, 16, 16);
 
