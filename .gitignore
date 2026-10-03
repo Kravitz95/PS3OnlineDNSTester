@@ -1,18 +1,23 @@
 .gradle/
 build/
-**/build/
-node_modules/
+*/build/
+app/build/
 *.apk
-*.zip
-backup_v31/
-backup_v40/
-app/src/main/java/com/ps3online/dnstester/MainActivity.java.bak
+*.aab
 local.properties
-signaling-server/server.log
+.idea/
+*.iml
+.externalNativeBuild/
+.cxx/
 
-# Node / signaling server
+# Backups locales
+*.before_*
+backups/
+
+# Backups locales
+backup_v*/
+backups/
+
+# Signaling server
 signaling-server/node_modules/
-signaling-server/server.log
-
-# Android local configuration
-local.properties
+signaling-server/*.log

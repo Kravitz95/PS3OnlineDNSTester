@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "664684374054",
+    "project_id": "ps3-online-dns-test",
+    "storage_bucket": "ps3-online-dns-test.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:664684374054:android:358111bfb7cf2d786fdee7",
+        "android_client_info": {
+          "package_name": "com.ps3online.dnstester"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDC7HD26QfQsAKOBxobGtC4P22fOGMMWqQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

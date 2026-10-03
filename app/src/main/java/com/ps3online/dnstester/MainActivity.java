@@ -21,6 +21,7 @@ import com.ps3online.dnstester.p2p.P2PSession;
 import com.ps3online.dnstester.stun.StunP2P;
 import com.ps3online.dnstester.data.GameSearchService;
 import com.ps3online.dnstester.system.SystemStatusService;
+import com.ps3online.dnstester.system.OnlinePresenceService;
 import com.ps3online.dnstester.interpretation.ResultInterpreter;
 import com.ps3online.dnstester.interpretation.TestResult;
 import java.util.ArrayList;
@@ -29,6 +30,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends Activity {
+    private ScrollView mainScroll;
+    private LinearLayout resultPanel;
+    private TextView resultHeader;
+    private TextView resultStatus;
+    private Button resultCopyButton;
+    private Button resultRepeatButton;
+    private String lastResultText = "";
 
     private AutoCompleteTextView gameSelector;
     private AutoCompleteTextView dnsSelector;
@@ -67,6 +75,11 @@ private final ExecutorService dnsExecutor = Executors.newFixedThreadPool(2);
     private LinearLayout systemStatusContainer;
     private TextView systemSummary;
     private boolean systemStatusRunning = false;
+
+    private TextView onlineUsers;
+
+    private OnlinePresenceService onlinePresenceService;
+
 
     /**
      * Actualiza la tarjeta de comunidades relacionadas.
@@ -261,25 +274,25 @@ buildInterface();
 
     private void buildInterface() {
 
-        ScrollView scroll = new ScrollView(this);
-        scroll.setFillViewport(true);
-        scroll.setClipToPadding(false);
-        scroll.setPadding(0, 0, 0, 80);
+        mainScroll = new ScrollView(this);
+        mainScroll.setFillViewport(true);
+        mainScroll.setClipToPadding(false);
+        mainScroll.setPadding(0, 0, 0, 80);
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setGravity(Gravity.CENTER_HORIZONTAL);
         root.setPadding(32, 28, 32, 100);
 
-        scroll.addView(root);
+        mainScroll.addView(root);
 
         LinearLayout headerRow = new LinearLayout(this);
         headerRow.setOrientation(LinearLayout.HORIZONTAL);
         headerRow.setGravity(Gravity.CENTER_VERTICAL);
         headerRow.setPadding(0, 64, 0, 28);
 
-        TextView onlineUsers = new TextView(this);
-        onlineUsers.setText("👥 142 online");
+        onlineUsers = new TextView(this);
+        onlineUsers.setText("👥 0 online");
         onlineUsers.setTextSize(12);
         onlineUsers.setGravity(Gravity.CENTER_VERTICAL);
 
@@ -293,7 +306,7 @@ buildInterface();
         headerRow.addView(onlineUsers, sideParams);
 
         TextView headerTitle = new TextView(this);
-        headerTitle.setText("🎮 PS3 ONLINE CONNECT v4.0");
+        headerTitle.setText("🎮 PS3 ONLINE DNS TEST");
         headerTitle.setTextSize(20);
         headerTitle.setGravity(Gravity.CENTER);
 
@@ -588,7 +601,7 @@ gameSearchAdapter =
 TextView dnsTitle = new TextView(this);
 dnsTitle.setText("2. 🌐 DNS");
 dnsTitle.setTextSize(18);
-dnsTitle.setGravity(Gravity.LEFT);
+dnsTitle.setGravity(Gravity.START);
 dnsTitle.setPadding(0, 24, 0, 2);
 root.addView(dnsTitle);
 
@@ -597,7 +610,7 @@ dnsInstruction.setText(
         "Selecciona una DNS o introduce una personalizada"
 );
 dnsInstruction.setTextSize(13);
-dnsInstruction.setGravity(Gravity.LEFT);
+dnsInstruction.setGravity(Gravity.START);
 dnsInstruction.setPadding(0, 0, 0, 10);
 root.addView(dnsInstruction);
         TextView dnsPrimaryLabel = new TextView(this);
@@ -891,8 +904,8 @@ root.addView(dnsInstruction);
         TextView connectivityTitle = new TextView(this);
         connectivityTitle.setText("3. 🧪 PRUEBA DE CONECTIVIDAD");
         connectivityTitle.setTextSize(18);
-        connectivityTitle.setGravity(Gravity.CENTER);
-        connectivityTitle.setPadding(0, 32, 0, 10);
+        connectivityTitle.setGravity(Gravity.START);
+        connectivityTitle.setPadding(0, 28, 0, 10);
         root.addView(connectivityTitle);
 
         TextView connectivityInfo = new TextView(this);
@@ -904,7 +917,7 @@ root.addView(dnsInstruction);
                 "Las pruebas P2P requieren dos móviles en redes diferentes."
         );
         connectivityInfo.setTextSize(14);
-        connectivityInfo.setGravity(Gravity.CENTER);
+        connectivityInfo.setGravity(Gravity.START);
         connectivityInfo.setPadding(20, 8, 20, 12);
         root.addView(connectivityInfo);
 
@@ -1001,15 +1014,16 @@ root.addView(dnsInstruction);
                 "STUN • NAT • UPnP • UDP P2P • latencia • pérdida • estabilidad"
         );
         connectivityDetails.setTextSize(13);
-        connectivityDetails.setGravity(Gravity.CENTER);
+        connectivityDetails.setGravity(Gravity.START);
         connectivityDetails.setPadding(20, 12, 20, 20);
         root.addView(connectivityDetails);
+        createResultPanel(root);
 
         TextView labTitle = new TextView(this);
         labTitle.setText("4. 🎮 LABORATORIO PS3");
         labTitle.setTextSize(18);
-        labTitle.setGravity(Gravity.CENTER);
-        labTitle.setPadding(0, 32, 0, 10);
+        labTitle.setGravity(Gravity.START);
+        labTitle.setPadding(0, 28, 0, 10);
         root.addView(labTitle);
 
         TextView labInfo = new TextView(this);
@@ -1022,7 +1036,7 @@ root.addView(dnsInstruction);
                 "protocolos propietarios del juego."
         );
         labInfo.setTextSize(14);
-        labInfo.setGravity(Gravity.CENTER);
+        labInfo.setGravity(Gravity.START);
         labInfo.setPadding(20, 8, 20, 12);
         root.addView(labInfo);
 
@@ -1037,8 +1051,8 @@ root.addView(dnsInstruction);
         TextView systemTitle = new TextView(this);
         systemTitle.setText("5. 🛠️ ESTADO DEL SISTEMA");
         systemTitle.setTextSize(18);
-        systemTitle.setGravity(Gravity.CENTER);
-        systemTitle.setPadding(0, 32, 0, 10);
+        systemTitle.setGravity(Gravity.START);
+        systemTitle.setPadding(0, 28, 0, 10);
         root.addView(systemTitle);
 
         systemStatusContainer = new LinearLayout(this);
@@ -1058,7 +1072,7 @@ root.addView(dnsInstruction);
                 "PSN y los servicios de conectividad disponibles."
         );
         systemSummary.setTextSize(14);
-        systemSummary.setGravity(Gravity.CENTER);
+        systemSummary.setGravity(Gravity.START);
         systemSummary.setPadding(16, 16, 16, 16);
 
         systemStatusContainer.addView(systemSummary);
@@ -1161,14 +1175,14 @@ root.addView(dnsInstruction);
                 "red, el proveedor y los servicios externos."
         );
         systemInfo.setTextSize(12);
-        systemInfo.setGravity(Gravity.CENTER);
+        systemInfo.setGravity(Gravity.START);
         systemInfo.setPadding(20, 8, 20, 12);
         root.addView(systemInfo);
         TextView communityTitle = new TextView(this);
         communityTitle.setText("6. 👥 COMUNIDADES");
         communityTitle.setTextSize(18);
-        communityTitle.setGravity(Gravity.CENTER);
-        communityTitle.setPadding(0, 32, 0, 10);
+        communityTitle.setGravity(Gravity.START);
+        communityTitle.setPadding(0, 28, 0, 10);
         root.addView(communityTitle);
 
         communityInfo = new TextView(this);
@@ -1184,7 +1198,7 @@ root.addView(dnsInstruction);
                 "🆔 The Last of Us + Uncharted 2 + Uncharted 3"
         );
         communityInfo.setTextSize(15);
-        communityInfo.setGravity(Gravity.CENTER);
+        communityInfo.setGravity(Gravity.START);
         communityInfo.setPadding(20, 12, 20, 12);
         root.addView(communityInfo);
 
@@ -1199,8 +1213,8 @@ root.addView(dnsInstruction);
         TextView faqTitle = new TextView(this);
         faqTitle.setText("7. ❓ FAQ");
         faqTitle.setTextSize(18);
-        faqTitle.setGravity(Gravity.CENTER);
-        faqTitle.setPadding(0, 32, 0, 10);
+        faqTitle.setGravity(Gravity.START);
+        faqTitle.setPadding(0, 28, 0, 10);
         root.addView(faqTitle);
 
         TextView faqInfo = new TextView(this);
@@ -1213,14 +1227,15 @@ root.addView(dnsInstruction);
                 "NAT esté abierto ni garantiza que un juego de PS3 vaya a conectar."
         );
         faqInfo.setTextSize(14);
+        faqInfo.setGravity(Gravity.START);
         faqInfo.setPadding(20, 8, 20, 20);
         root.addView(faqInfo);
 
         TextView supportTitle = new TextView(this);
         supportTitle.setText("8. ☕ APOYAR EL PROYECTO");
         supportTitle.setTextSize(18);
-        supportTitle.setGravity(Gravity.CENTER);
-        supportTitle.setPadding(0, 36, 0, 10);
+        supportTitle.setGravity(Gravity.START);
+        supportTitle.setPadding(0, 28, 0, 10);
         root.addView(supportTitle);
 
         TextView supportInfo = new TextView(this);
@@ -1229,7 +1244,7 @@ root.addView(dnsInstruction);
                 "Ayuda a mantener la APK, la API y la base de datos."
         );
         supportInfo.setTextSize(14);
-        supportInfo.setGravity(Gravity.CENTER);
+        supportInfo.setGravity(Gravity.START);
         supportInfo.setPadding(20, 8, 20, 18);
         root.addView(supportInfo);
 
@@ -1241,17 +1256,17 @@ root.addView(dnsInstruction);
         TextView infoTitle = new TextView(this);
         infoTitle.setText("9. ℹ️ INFORMACIÓN");
         infoTitle.setTextSize(18);
-        infoTitle.setGravity(Gravity.CENTER);
-        infoTitle.setPadding(0, 32, 0, 10);
+        infoTitle.setGravity(Gravity.START);
+        infoTitle.setPadding(0, 28, 0, 10);
         root.addView(infoTitle);
 
         TextView infoText = new TextView(this);
         infoText.setText(
-                "PS3 ONLINE CONNECT v4.0\n" +
+                "PS3 ONLINE DNS TEST\n" +
                 "Diagnóstico DNS, conectividad P2P y laboratorio experimental."
         );
         infoText.setTextSize(14);
-        infoText.setGravity(Gravity.CENTER);
+        infoText.setGravity(Gravity.START);
         infoText.setPadding(20, 8, 20, 20);
         root.addView(infoText);
 
@@ -1260,10 +1275,25 @@ root.addView(dnsInstruction);
                 "\nEstado: esperando prueba."
         );
         status.setTextSize(14);
-        status.setGravity(Gravity.CENTER);
+        status.setGravity(Gravity.START);
         status.setTextIsSelectable(true);
-        status.setPadding(10, 24, 10, 40);
-        root.addView(status);
+        status.setPadding(20, 20, 20, 24);
+
+        GradientDrawable statusBackground = new GradientDrawable();
+        statusBackground.setColor(Color.rgb(18, 22, 30));
+        statusBackground.setCornerRadius(24);
+        statusBackground.setStroke(2, Color.rgb(70, 80, 95));
+        status.setBackground(statusBackground);
+
+        LinearLayout.LayoutParams statusParams =
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                );
+
+        statusParams.setMargins(0, 12, 0, 24);
+
+        root.addView(status, statusParams);
 
 
 gameSelector.setOnItemClickListener(
@@ -1332,7 +1362,7 @@ gameSelector.setOnItemClickListener(
                         "⚠️ VERIFICACIÓN RECOMENDADA\n\n" +
                         "Este resultado procede de una búsqueda " +
                         "externa y todavía no forma parte de la " +
-                        "base verificada de PS3 ONLINE CONNECT."
+                        "base verificada de PS3 ONLINE DNS TEST."
                 );
 
                 verificationCard.setVisibility(
@@ -1518,7 +1548,32 @@ gameSelector.setOnItemClickListener(
             }
         }
 );
-    setContentView(scroll);
+    setContentView(mainScroll);
+
+        onlinePresenceService =
+                new OnlinePresenceService(
+                        new OnlinePresenceService.Listener() {
+
+                            @Override
+                            public void onOnlineCountChanged(long count) {
+                                if (onlineUsers != null) {
+                                    onlineUsers.setText(
+                                            "👥 " + count + " online"
+                                    );
+                                }
+                            }
+
+                            @Override
+                            public void onPresenceError(String message) {
+                                if (onlineUsers != null) {
+                                    onlineUsers.setText(
+                                            "👥 — online"
+                                    );
+                                }
+                            }
+                        }
+                );
+
     }
 
     private void ejecutarModoSolo() {
@@ -1924,6 +1979,94 @@ gameSelector.setOnItemClickListener(
         });
     }
 
+    private void createResultPanel(LinearLayout root) {
+        resultPanel = new LinearLayout(this);
+        resultPanel.setOrientation(LinearLayout.VERTICAL);
+        resultPanel.setPadding(20, 20, 20, 20);
+
+        GradientDrawable panelBackground = new GradientDrawable();
+        panelBackground.setColor(Color.rgb(18, 22, 30));
+        panelBackground.setCornerRadius(28);
+        panelBackground.setStroke(2, Color.rgb(70, 80, 95));
+        resultPanel.setBackground(panelBackground);
+
+        LinearLayout.LayoutParams panelParams =
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                );
+        panelParams.setMargins(0, 24, 0, 24);
+
+        resultHeader = new TextView(this);
+        resultHeader.setText("🧪 RESULTADO DE LA PRUEBA");
+        resultHeader.setTextSize(18);
+        resultHeader.setTextColor(Color.WHITE);
+        resultHeader.setGravity(Gravity.START);
+        resultHeader.setPadding(0, 0, 0, 12);
+        resultPanel.addView(resultHeader);
+
+        resultStatus = new TextView(this);
+        resultStatus.setText("⚪ Esperando una prueba...");
+        resultStatus.setTextSize(14);
+        resultStatus.setTextColor(Color.WHITE);
+        resultStatus.setGravity(Gravity.START);
+        resultStatus.setTextIsSelectable(true);
+        resultStatus.setPadding(4, 8, 4, 12);
+        resultPanel.addView(resultStatus);
+
+        LinearLayout resultButtons = new LinearLayout(this);
+        resultButtons.setOrientation(LinearLayout.HORIZONTAL);
+
+        resultCopyButton = new Button(this);
+        resultCopyButton.setText("📋 COPIAR");
+        resultCopyButton.setAllCaps(false);
+
+        resultRepeatButton = new Button(this);
+        resultRepeatButton.setText("🔄 REPETIR");
+        resultRepeatButton.setAllCaps(false);
+
+        LinearLayout.LayoutParams buttonParams =
+                new LinearLayout.LayoutParams(
+                        0,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        1f
+                );
+        buttonParams.setMargins(4, 8, 4, 0);
+
+        resultButtons.addView(resultCopyButton, buttonParams);
+        resultButtons.addView(resultRepeatButton, buttonParams);
+
+        resultPanel.addView(resultButtons);
+
+        resultCopyButton.setOnClickListener(v -> {
+            if (lastResultText == null || lastResultText.isEmpty()) {
+                return;
+            }
+
+            android.content.ClipboardManager clipboard =
+                    (android.content.ClipboardManager)
+                            getSystemService(CLIPBOARD_SERVICE);
+
+            if (clipboard != null) {
+                clipboard.setPrimaryClip(
+                        android.content.ClipData.newPlainText(
+                                "Resultado PS3 ONLINE DNS TEST",
+                                lastResultText
+                        )
+                );
+            }
+        });
+
+        resultRepeatButton.setOnClickListener(v -> {
+            if (!p2pRunning) {
+                testDnsSimultaneously();
+            }
+        });
+
+        resultPanel.setVisibility(View.GONE);
+        root.addView(resultPanel, panelParams);
+    }
+
     private void showDnsResult(
             String primary,
             String secondary,
@@ -2167,7 +2310,35 @@ gameSelector.setOnItemClickListener(
                 + "compatibilidad con un juego PS3."
         );
 
-        status.setText(result.toString());
+        lastResultText = result.toString();
+
+        status.setText(lastResultText);
+
+        if (resultPanel != null && resultStatus != null) {
+            resultPanel.setVisibility(View.VISIBLE);
+            resultStatus.setText(lastResultText);
+
+            resultHeader.setText("🧪 RESULTADO DEL ANÁLISIS");
+
+            if (primaryOk && secondaryOk) {
+                resultHeader.setText("🟢 RESULTADO DEL ANÁLISIS");
+            } else if (primaryOk || secondaryOk) {
+                resultHeader.setText("🟡 RESULTADO DEL ANÁLISIS");
+            } else {
+                resultHeader.setText("🔴 RESULTADO DEL ANÁLISIS");
+            }
+
+            resultCopyButton.setEnabled(true);
+            resultRepeatButton.setEnabled(!p2pRunning);
+
+            if (mainScroll != null) {
+                mainScroll.postDelayed(() ->
+                        mainScroll.smoothScrollTo(
+                                0,
+                                resultPanel.getBottom()
+                        ), 150);
+            }
+        }
     }
 
     private boolean isValidIpv4(String ip) {
@@ -2195,4 +2366,23 @@ gameSelector.setOnItemClickListener(
             return false;
         }
     }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        if (onlinePresenceService != null) {
+            onlinePresenceService.start();
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        if (onlinePresenceService != null) {
+            onlinePresenceService.stop();
+        }
+
+        super.onStop();
+    }
+
 }
